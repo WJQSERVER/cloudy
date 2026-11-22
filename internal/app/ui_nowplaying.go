@@ -343,7 +343,13 @@ func (a *app) nowPlayingBody(c *ui.Context, tr *netease.Track, art *artwork, acc
 					}
 					_, title := a.marqueeLine(c, "np-title", tr.Name, titleSize, 700, -0.3)
 					a.npSpot.title = title.LayoutBounds()
-					a.flown(title)
+					// Match fly-title's grayscale glyph coverage so landing on Windows
+					// does not snap from grayscale AA to ClearType RGB subpixel fringes
+					// after the opening motion finishes.
+					title.Translate(-1e-4, 0)
+					if a.npTitleFlying() {
+						title.Opacity(0)
+					}
 					a.artistLinks(c, tr, white.Alpha(0.6), white, true).FontSize(15).SingleLine()
 				}
 				actions := func(size float32) {
