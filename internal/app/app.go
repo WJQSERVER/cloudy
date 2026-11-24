@@ -61,6 +61,8 @@ type app struct {
 	// under it; trayPopupDone stops watching for a press outside it, and
 	// trayPopupClosed is when a press outside last closed it.
 	trayPopupGlass  bool
+	trayPopupEnter  bool
+	trayPopupOrigin ui.Point
 	trayBackdrop    *ui.Bitmap
 	trayPopupDone   chan struct{}
 	trayPopupClosed time.Time
