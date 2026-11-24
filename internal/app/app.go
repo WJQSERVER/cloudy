@@ -163,15 +163,24 @@ type app struct {
 	suggestions  suggestState          // what the search field's query may be after
 	suggestShown suggestShown          // what the search field's popup showed last, as it goes
 
-	nowPlaying   bool
-	npFull       bool       // Now Playing taking the whole screen
-	fullHintAt   time.Time  // when the bubble telling of F11 first showed in this run
-	sysAccent    string     // the desktop's accent as #RRGGBB, "" where it has none
-	npOpen       bool       // Now Playing as it last showed: open or not
-	npChangedAt  time.Time  // when it last opened or closed
-	mem          memRelease // memory given back when the app is quiet (releaseSoon)
-	npPane       int        // paneLyrics, paneQueue, paneStage, paneComments, paneProgram, paneCaptions, paneWall or paneWiki
-	npPaneTop    float32    // how far the cover beside the pane starts below its top
+	nowPlaying  bool
+	npFull      bool       // Now Playing taking the whole screen
+	fullHintAt  time.Time  // when the bubble telling of F11 first showed in this run
+	sysAccent   string     // the desktop's accent as #RRGGBB, "" where it has none
+	sysOpaque   bool       // the desktop asks for opaque surfaces: Windows's transparency effects off
+	npOpen      bool       // Now Playing as it last showed: open or not
+	npChangedAt time.Time  // when it last opened or closed
+	mem         memRelease // memory given back when the app is quiet (releaseSoon)
+	npPane      int        // paneLyrics, paneQueue, paneStage, paneAnalysis, paneProgram, paneCaptions, paneWall or paneWiki
+	// npComments is whether the comments are out, in their drawer at
+	// the right of Now Playing (ui_comment_drawer.go).
+	npComments bool
+	npDrawer   float32 // how far out the drawer is, eased, 0 to 1
+	// an is the analysis pane's state (ui_analysis.go), anScrub its
+	// progress bar's.
+	an           anView
+	anScrub      scrubState
+	npPaneTop    float32 // how far the cover beside the pane starts below its top
 	lyricScroll  ui.ScrollState
 	lyricGlide   lyricGlide
 	lyricWheel   float32   // the wheel over a lyric value, short of a step
@@ -241,7 +250,6 @@ type app struct {
 	headAt                ui.Rect          // where the cover of the page's header is
 	cameFrom              cardOrigin       // the card this page was opened from
 	restoreY              float32          // how far to scroll the page coming back
-	fontsAsked            bool             // the fonts that come as files were asked for
 	plView                plView           // how the playlist open is searched and sorted
 	headGone              float32          // how far the page's header has scrolled away
 	rowsRoute             route            // the page whose list last came in
@@ -267,6 +275,7 @@ type app struct {
 	shownLines   shownCache      // the lyrics shown, without credits if hidden
 	update       updateState     // the update pane, and the update it found
 	whatsNew     whatsNewState   // what the version updated to brought, said once
+	support      supportState    // the support page (支持 Cloudy), under 关于
 	cacheUsed    int64           // the bytes the song cache takes, -1 until measured
 	updates      bool            // the update plugin is used (useUpdater)
 	fontList     []uiFont        // the fonts on offer here (fontChoices)

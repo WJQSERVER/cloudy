@@ -114,6 +114,12 @@ func TestSettingsCategoryNavigation(t *testing.T) {
 	if !a.settings.UpdateInstall {
 		t.Fatal("returning to about lost the update preference")
 	}
+	// 支持作者 stands above 更新: down to its button.
+	if pane, ok := tt.Find("关于设置项"); ok {
+		tt.Scroll(pane.X+40, pane.Y+pane.H/2, 0, 220)
+		tt.Advance(time.Second)
+		tt.Frame()
+	}
 	if err := tt.Click("检查更新"); err != nil {
 		t.Fatal(err)
 	}
@@ -327,8 +333,11 @@ func TestFeedbackMailClosed(t *testing.T) {
 	tt.Scroll(pane.X+40, pane.Y+pane.H/2, 0, 2000)
 	tt.Advance(time.Second)
 	tt.Frame()
-	if !tt.HasText("用邮件发送 · 未开放") {
-		t.Fatal("the mail button does not say it is closed")
+	if tt.HasText("用邮件发送") || tt.HasText("添加图片") {
+		t.Fatal("the mail, or its pictures, are offered while it is closed")
+	}
+	if !tt.HasText("发到 B 站私信") || !tt.HasText("去 Issue 反馈") {
+		t.Fatal("the ways to send feedback are not shown")
 	}
 	a.sendFeedback()
 	if a.feedback.sending {

@@ -103,7 +103,7 @@ func (a *app) settingsPanel(c *ui.Context) {
 	a.dialog(c, "settings", 0.3, &a.settingsView.open, func(panel ui.Element) {
 		// It grows from the corner of who listens, whose row opens it.
 		panel.Width(min(940, w-48)).Height(max(h-72, 320)).TextColor(ink.text).Label("设置")
-		a.pane(panel, 26, false)
+		a.dialogPane(panel, 26, false)
 		panel.Children(func() {
 			a.scalingBody(c, func() {
 				ui.Row(c).Grow(1).MinHeight(0).AlignItems(ui.Stretch).Children(func() {
@@ -128,7 +128,7 @@ func (a *app) globalGlassDialog(c *ui.Context) {
 	a.dialog(c, "confirm-global-glass", 0.25, &sv.confirmGlass, func(panel ui.Element) {
 		ink := a.inkOn(false)
 		panel.Width(410).TextColor(ink.text).Label("全局液态玻璃确认")
-		a.pane(panel, 26, false)
+		a.dialogPane(panel, 26, false)
 		panel.Children(func() {
 			dialogHeader(c, ink, "开启全局液态玻璃？", "", func() { sv.confirmGlass = false })
 			ui.Row(c).PaddingX(28).Gap(8).AlignItems(ui.Start).Children(func() {
@@ -235,6 +235,7 @@ func (a *app) settingsNavItems(c *ui.Context, ink paneInk, searching bool) {
 		if button.Clicked() {
 			a.settingsView.tab = settingsCategory(i)
 			a.settingsView.query = ""
+			a.support.page = false
 		}
 	}
 }
@@ -602,6 +603,15 @@ func (a *app) settingsBody(c *ui.Context) {
 		page.Children(func() {
 			if k.query == "" {
 				cat := settingsCategories[a.settingsView.tab]
+				if a.settingsView.tab == settingsAbout && a.support.page {
+					// 支持 Cloudy, in place of 关于's page, which it goes back to.
+					col := ui.Column(c.Key("support"))
+					if swap {
+						a.enterAfterPaint(col, ui.Pose{Y: 8}, motionSwap)
+					}
+					col.Children(func() { a.supportPage(k) })
+					return
+				}
 				col := ui.Column(c.Key(a.settingsView.tab))
 				if swap {
 					// What it holds rises, only moved: a move the renderer
@@ -1074,6 +1084,9 @@ func (a *app) settingsAboutPage(k *settingsKit) {
 	s := &a.settings
 	k.group("软件信息", func() {
 		k.block("软件信息 版本 源码 原项目 开源 "+mygo.App.Version(), func() { a.aboutCard(k) })
+	})
+	k.group("支持作者", func() {
+		k.block(supportWords, func() { a.supportCard(k) })
 	})
 	if a.updates {
 		k.group("更新", func() {
