@@ -254,6 +254,8 @@ type app struct {
 	headGone              float32          // how far the page's header has scrolled away
 	rowsRoute             route            // the page whose list last came in
 	rowsAt                time.Time        // when it started to
+	rowsPending           bool             // waiting for trackList's first layout
+	rowsStart, rowsCount  int              // the first song and count in the entrance batch
 	sideColor             ui.Color         // what the sidebar shows, as it eases
 	flight                coverFlight      // a cover on its way to the page it opens
 	heldRoute             route            // the page opened from a card
