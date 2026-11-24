@@ -326,7 +326,7 @@ func (a *app) supportCode(c *ui.Context, m struct {
 	code.Background(tint).Shadow(0, 10, 28, 0, tint.Alpha(0.18+0.12*k)).
 		AnimatePose(ui.Pose{Scale: lift}, ui.Snappy).
 		Children(func() {
-			face := ui.Box(c).Size(size, size).Radius(12).Clip()
+			face := ui.Box(c).Size(size, size).Radius(14).Clip()
 			face.Children(func() {
 				inner := ui.Box(c).Fill()
 				if k < 1 {
@@ -373,7 +373,7 @@ func (a *app) supportTile(c *ui.Context, ink paneInk, key, title string, icon *u
 	b.Background(b.AnimateColor("bg", bg, motionHover)).Border(0.5, edge).Children(func() {
 		ui.Column(c).Grow(1).MinWidth(0).Gap(14).Children(func() {
 			ui.Row(c).AlignItems(ui.Start).Children(func() {
-				ui.Box(c).Size(36, 36).Radius(11).Center().Shrink(0).Background(tint.Alpha(0.16)).Children(func() {
+				ui.Box(c).Size(36, 36).Radius(8).Center().Shrink(0).Background(tint.Alpha(0.16)).Children(func() {
 					ui.Icon(c, icon).Size(18, 18).TextColor(tint)
 				})
 				ui.Spacer(c)

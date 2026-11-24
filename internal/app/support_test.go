@@ -189,13 +189,28 @@ func TestSupportPage(t *testing.T) {
 	}
 	tt.Advance(time.Second)
 	tt.Frame()
-	if !a.support.page || !tt.HasText("谢谢你愿意支持 Cloudy") || !tt.HasText("云边的猫") || !tt.HasText("001") || !tt.HasText("38") {
+	if !a.support.page || !tt.HasText("让 Cloudy 一直唱下去") || !tt.HasText("云边的猫") || !tt.HasText("001") || !tt.HasText("38") {
 		t.Fatal("the page does not show, or not the wall read")
 	}
 	if !tt.HasText("微信收款码\n还没有放") && !tt.HasText("扫码请 nya 喝杯奶茶") {
 		t.Fatal("no codes")
 	}
-	_ = tt.Click("放大微信收款码")
+	// The code is covered: a first click uncovers it, and only then does
+	// a click show it large.
+	if a.support.shown {
+		t.Fatal("the code shows before it was asked for")
+	}
+	if err := tt.Click("点一下显示微信收款码"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Advance(time.Second)
+	tt.Frame()
+	if !a.support.shown || a.support.large {
+		t.Fatalf("a first click: shown %v large %v, want shown only", a.support.shown, a.support.large)
+	}
+	if err := tt.Click("放大微信收款码"); err != nil {
+		t.Fatal(err)
+	}
 	tt.Advance(time.Second)
 	tt.Frame()
 	if !a.support.large {
