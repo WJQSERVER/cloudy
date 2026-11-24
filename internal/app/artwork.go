@@ -27,10 +27,13 @@ type artwork struct {
 	sticker  *stickerAnimation
 	backdrop *ui.Bitmap
 	tint     ui.Color // the cover's most vivid color
-	failed   bool
-	retryAt  time.Time // a failed request can be tried again after this time
-	used     time.Time // when it was last asked for
-	size     int       // the bytes it keeps: its data, and the backdrop's pixels
+	// palette is what the cover is made of, its ground first
+	// (coverPalette), for Now Playing's covers, which have a backdrop.
+	palette []ui.Color
+	failed  bool
+	retryAt time.Time // a failed request can be tried again after this time
+	used    time.Time // when it was last asked for
+	size    int       // the bytes it keeps: its data, and the backdrop's pixels
 }
 
 // artCache loads covers on goroutines and keeps them, up to artLimit
@@ -49,6 +52,8 @@ type artCache struct {
 	now   func() time.Time
 	size  int // the bytes the covers in art keep
 	limit int
+	// adds counts the covers put in, for sweepGone to look now and then.
+	adds int
 }
 
 // artLimit is how many bytes of covers the cache keeps. A cover keeps its
@@ -66,6 +71,11 @@ func newArtCache(post func(func())) *artCache {
 // covers take more than the limit, down to three quarters of it, so that
 // it sorts them seldom. Those showing were asked for last, and stay.
 func (c *artCache) add(key string, a *artwork) {
+	// The covers let go of are swept now and then, not only once the cache
+	// is over its limit: browsing for hours leaves thousands of them.
+	if c.adds++; c.adds%32 == 0 {
+		c.sweepGone()
+	}
 	if old, ok := c.art[key]; ok {
 		c.size -= old.size
 	}
@@ -80,11 +90,7 @@ func (c *artCache) add(key string, a *artwork) {
 // trim drops the covers asked for least recently until those kept take
 // no more than target bytes.
 func (c *artCache) trim(target int) {
-	for key, p := range c.gone {
-		if p.Value() == nil {
-			delete(c.gone, key)
-		}
-	}
+	c.sweepGone()
 	keys := make([]string, 0, len(c.art))
 	for key := range c.art {
 		keys = append(keys, key)
@@ -98,6 +104,15 @@ func (c *artCache) trim(target int) {
 		delete(c.art, key)
 		c.size -= a.size
 		c.gone[key] = weak.Make(a)
+	}
+}
+
+// sweepGone drops the covers let go of that nothing holds any more.
+func (c *artCache) sweepGone() {
+	for key, p := range c.gone {
+		if p.Value() == nil {
+			delete(c.gone, key)
+		}
 	}
 }
 
@@ -221,6 +236,7 @@ func loadArt(url string, backdrop, sticker, animate bool) (*artwork, error) {
 		blurred := blurImage(img)
 		a.backdrop = ui.NewBitmap(blurred)
 		a.size += len(blurred.Pix)
+		a.palette = coverPalette(img)
 	}
 	return a, nil
 }
