@@ -72,15 +72,19 @@ type settings struct {
 	// own shader (barGlass), as by default. MenuLiquid and DialogLiquid
 	// glaze the menus and popovers, and the dialogs and the settings, in
 	// liquid glass rather than frosted, as 1.3.6 had them and they stay by
-	// default (the user, 1.3.7-test.4); GlobalGlass makes them liquid too,
-	// as it did. AnalysisFrost frosts the analysis pane's cards, liquid by
-	// default.
-	BarFrost      bool `json:"barFrost,omitempty"`
-	MenuLiquid    bool `json:"menuLiquid,omitempty"`
-	DialogLiquid  bool `json:"dialogLiquid,omitempty"`
+	// default (the user, 1.3.7-test.4); unset, GlobalGlass makes them
+	// liquid, as it did, but what the listener chose stands (#55).
+	// AnalysisFrost frosts the analysis pane's cards, liquid by default.
+	BarFrost      bool  `json:"barFrost,omitempty"`
+	MenuLiquid    *bool `json:"menuLiquid,omitempty"`
+	DialogLiquid  *bool `json:"dialogLiquid,omitempty"`
 	AnalysisFrost bool `json:"analysisFrost,omitempty"`
 	// Motion is how much the app moves: full, lite or off.
 	Motion string `json:"motion,omitempty"`
+	// IgnoreSystemMotion keeps the app moving while the desktop asks for
+	// less motion (Windows's animation effects off), as Motion says: some
+	// turn those off for the desktop's speed, not to keep apps still (PR #28).
+	IgnoreSystemMotion bool `json:"ignoreSystemMotion,omitempty"`
 	// AccentCover takes the accent from the cover playing: else the app's red.
 	AccentCover bool `json:"accentCover"`
 	// Accent is the color the listener gave the app, #RRGGBB, or empty for
@@ -313,9 +317,19 @@ func (s settings) frosted(scene glassScene) bool {
 	case sceneAnalysis:
 		return s.AnalysisFrost
 	case sceneDialog:
-		return !s.DialogLiquid && !s.GlobalGlass
+		return !liquidChosen(s.DialogLiquid, s.GlobalGlass)
 	}
-	return !s.MenuLiquid && !s.GlobalGlass
+	return !liquidChosen(s.MenuLiquid, s.GlobalGlass)
+}
+
+// liquidChosen is whether a place the listener chose for, or did not, is in
+// liquid glass: what they chose, else liquid under the global glass only.
+// The global glass made it liquid whatever they chose before (#55).
+func liquidChosen(chosen *bool, global bool) bool {
+	if chosen != nil {
+		return *chosen
+	}
+	return global
 }
 
 // glassClear is how clear the glass is in dark mode or light: each keeps

@@ -549,7 +549,22 @@ const (
 	rowStep   = 24 * time.Millisecond
 	rowTime   = 280 * time.Millisecond
 	rowSpread = 360 * time.Millisecond
+	// rowsWaitMost is how long the rows wait for the list's first layout
+	// before showing without their entrance: a list that is built but not
+	// laid out, as in a minimized window, would otherwise keep them hidden
+	// and ask for frames on end.
+	rowsWaitMost = 250 * time.Millisecond
 )
+
+// rowsWaitedOut drops the entrance once the rows have waited for the
+// list's layout too long.
+func (a *app) rowsWaitedOut(c *ui.Context) bool {
+	if a.rowsPending && c.Now().Sub(a.rowsWaited) > rowsWaitMost {
+		a.rowsPending, a.rowsStart, a.rowsCount = false, 0, 0
+		return true
+	}
+	return false
+}
 
 // listOpened prepares the one-time entrance for the tracks visible when this
 // page's list first lays out: a cover on its way gets a head start, and back
@@ -575,11 +590,11 @@ func (a *app) listOpened(c *ui.Context, items []int, grid bool) {
 			a.trackList = ui.ListState{}
 			a.trackList.Visible()
 		}
-		a.rowsPending = true
+		a.rowsPending, a.rowsWaited = true, c.Now()
 		c.AnimationFrame()
 		return
 	}
-	if !a.rowsPending {
+	if !a.rowsPending || a.rowsWaitedOut(c) {
 		return
 	}
 	if grid || len(items) == 0 || a.motion != motionFull {
@@ -624,7 +639,7 @@ func (a *app) rowIn(c *ui.Context, i int) float32 {
 	if a.motion != motionFull {
 		return 1
 	}
-	if a.rowsPending {
+	if a.rowsPending && !a.rowsWaitedOut(c) {
 		c.AnimationFrame()
 		return 0
 	}

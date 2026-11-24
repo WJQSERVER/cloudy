@@ -589,6 +589,10 @@ func (a *app) trackRowsGrouped(c *ui.Context, tracks []netease.Track, groups []a
 			switch {
 			case batch:
 				a.toggleBatch(tr.ID)
+			case tr.Playable() && a.route.page == pageSearch:
+				// A song searched for joins what plays, after the one
+				// playing, rather than the results replacing the queue.
+				a.pl.PlayNow(*tr)
 			case tr.Playable():
 				a.pl.PlayQueue(tracks, i)
 			}

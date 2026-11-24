@@ -81,6 +81,8 @@ func (a *app) openSettingsAt(category settingsCategory) {
 // changed applies the settings everywhere and keeps them.
 func (a *app) changed() {
 	a.settings.save()
+	// Every window, the floating ones too, from their next frame.
+	ui.SetIgnoreReduceMotion(a.settings.IgnoreSystemMotion)
 	if a.win != nil {
 		// The theme source reaches the app's loop, which a view built in a
 		// test has none of.

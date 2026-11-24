@@ -257,6 +257,7 @@ type app struct {
 	rowsRoute             route            // the page whose list last came in
 	rowsAt                time.Time        // when it started to
 	rowsPending           bool             // waiting for trackList's first layout
+	rowsWaited            time.Time        // since when
 	rowsStart, rowsCount  int              // the first song and count in the entrance batch
 	sideColor             ui.Color         // what the sidebar shows, as it eases
 	flight                coverFlight      // a cover on its way to the page it opens
@@ -402,6 +403,7 @@ func Run() error {
 	a.useUpdater()
 	mygo.App.WhenReady(func() {
 		a.settings = loadSettings()
+		ui.SetIgnoreReduceMotion(a.settings.IgnoreSystemMotion)
 		a.applyUpdateSource()
 		a.applyOutput()
 		a.settings.applyAppearance()
