@@ -1,6 +1,8 @@
 {
   "updates": 37,
   "feedback": 0,
+  "issues": 11,
+  "prs": 17,
   "supporters": [
     {"no": 4, "name": "未署名", "avatar": "avatars/4.png"},
     {"no": 3, "name": "Bamboo", "avatar": "avatars/3.png"},
