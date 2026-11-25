@@ -53,7 +53,17 @@ type deskMain struct {
 	text  string
 	words []lyrics.Word
 	size  float32
+	wrap  bool // on two lines, too long for one
 }
+
+const (
+	// deskRoom is how wide a line of the desktop lyrics may be: the window,
+	// less its sides, a capsule's and an edge's.
+	deskRoom = deskW - 48 - 56 - 8
+	// deskShrink is how much smaller than its size a line too long goes,
+	// at most, to fit on one line; longer, it goes on two.
+	deskShrink = 0.72
+)
 
 // deskLines returns the line the desktop lyrics show large, and the one
 // under it, if any: what follows it, or says it in Chinese.
@@ -79,7 +89,57 @@ func (a *app) deskLines() (main deskMain, next string) {
 	case cur+1 < len(lines):
 		next = lines[cur+1].Text
 	}
+	if a.settings.DeskVertical {
+		return main, next // standing, deskColumns fits them
+	}
+	under := float32(0)
+	if next != "" {
+		under = a.deskNextSize(next, 19*scale)
+	}
+	main.size, main.wrap = a.deskFit(main, under)
 	return main, next
+}
+
+// deskFit returns the size the line m shows at, and whether on two lines:
+// as large as it is if it fits, smaller, down to deskShrink of that, if
+// that has it fit, and else on two lines, no larger than leaves room for the
+// line under it, of size under, in the window. Cut short, a long line was
+// only its start and an ellipsis.
+func (a *app) deskFit(m deskMain, under float32) (float32, bool) {
+	w, _ := a.deskShape(m, deskLook{}, 0, false).Size()
+	if w <= deskRoom {
+		return m.size, false
+	}
+	if fit := m.size * deskRoom / w * 0.98; fit >= m.size*deskShrink {
+		return fit, false
+	}
+	m.wrap = true
+	room := float32(deskH - deskToolsRoom - 20 - 6) // the capsule's padding, and some
+	if under > 0 {
+		room -= under*1.4 + 3
+	}
+	size := m.size * deskShrink
+	for ; size > 14; size *= 0.94 {
+		m.size = size
+		if _, h := a.deskShape(m, deskLook{}, 0, false).Size(); h <= room {
+			break
+		}
+	}
+	return size, true
+}
+
+// deskNextSize returns the size the line under the one sung shows at: as
+// large as it is, or smaller, down to deskShrink of that, to fit. Longer
+// still, it ends in an ellipsis.
+func (a *app) deskNextSize(text string, size float32) float32 {
+	if text == "" {
+		return size
+	}
+	w, _ := ui.ShapeText(text, ui.Font{Family: a.deskFamily(), Size: size, Weight: 700}, 0).Size()
+	if w <= deskRoom {
+		return size
+	}
+	return max(size*deskRoom/w*0.98, size*deskShrink)
 }
 
 // deskFlyShown says how much of the lyrics' window's text shows while they
@@ -116,7 +176,9 @@ func (a *app) startDeskFly(opening bool, desk mygo.Rectangle) bool {
 		return false
 	}
 	main, _ := a.deskLines()
-	if strings.TrimSpace(main.text) == "" {
+	if strings.TrimSpace(main.text) == "" || main.wrap || a.settings.DeskVertical {
+		// On two lines, or standing, it shows at once, not character by
+		// character.
 		return false
 	}
 	cb := a.win.ContentBounds()
@@ -127,7 +189,7 @@ func (a *app) startDeskFly(opening bool, desk mygo.Rectangle) bool {
 	if opening || at.W == 0 {
 		ink := a.deskShape(main, a.deskLookOf(a.settings.DeskStyle), 0, false)
 		w, h := ink.Size()
-		w = min(w, deskW-90)
+		w = min(w, deskRoom)
 		pad := float32(0)
 		if a.deskLookOf(a.settings.DeskStyle).pill.A > 0 {
 			pad = 10
@@ -277,13 +339,13 @@ func (a *app) paintDeskFly(p *ui.Painter, f *deskFlight, gone time.Duration) {
 // by word if it is sung so, in the colors of where it is at pos if colored,
 // else to be painted in one color.
 func (a *app) deskShape(m deskMain, look deskLook, pos time.Duration, colored bool) *ui.TextLayout {
-	family := a.fontFamily()
-	if a.settings.LyricFont != "" {
-		family = a.lyricFamily()
+	font := ui.Font{Family: a.deskFamily(), Size: m.size, Weight: 800}
+	width := float32(0)
+	if m.wrap {
+		width = deskRoom
 	}
-	font := ui.Font{Family: family, Size: m.size, Weight: 800}
 	if len(m.words) == 0 {
-		return ui.ShapeText(m.text, font, 0)
+		return ui.ShapeText(m.text, font, width)
 	}
 	spans := make([]ui.Span, len(m.words))
 	for i, wd := range m.words {
@@ -292,7 +354,15 @@ func (a *app) deskShape(m deskMain, look deskLook, pos time.Duration, colored bo
 			spans[i].Color = a.deskInk(look, &wd, pos)
 		}
 	}
-	return ui.ShapeRichText(spans, font, 0)
+	return ui.ShapeRichText(spans, font, width)
+}
+
+// deskFamily is the font of the desktop lyrics.
+func (a *app) deskFamily() string {
+	if a.settings.LyricFont != "" {
+		return a.lyricFamily()
+	}
+	return a.fontFamily()
 }
 
 // deskInk is the color of a word of the line large on the desktop, or of
@@ -310,7 +380,7 @@ func (a *app) deskInk(look deskLook, wd *lyrics.Word, pos time.Duration) ui.Colo
 // lyrics' window cuts off is left out.
 func deskGlyphs(ink *ui.TextLayout, m deskMain) []ui.Rect {
 	w, h := ink.Size()
-	limit := min(w, deskW-90)
+	limit := min(w, deskRoom)
 	units := utf16.Encode([]rune(m.shaped()))
 	var out []ui.Rect
 	for at := 0; at < len(units); {
