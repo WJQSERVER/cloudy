@@ -72,11 +72,17 @@ jobs:
 
           # Upload installers and update archives before manifests so installed
           # apps never see a manifest pointing at a missing archive. Leave out
-          # install.sh and SHA256SUMS, matching release.yml.
+          # install.sh and SHA256SUMS, matching release.yml. Installers as
+          # Cloudy-<version>-<arch>-macos, over the archives in the release's
+          # list (see release.yml's "Name the installers").
+          pkgs="$RUNNER_TEMP/pkgs"
+          mkdir -p "$pkgs"
+          cp "$out/darwin-arm64/${slug}-${version}-arm64.dmg" "$pkgs/Cloudy-${version}-arm64-macos.dmg"
+          cp "$out/darwin-amd64/${slug}-${version}-amd64.dmg" "$pkgs/Cloudy-${version}-amd64-macos.dmg"
           gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber \
-            "$out/darwin-arm64/${slug}-${version}-arm64.dmg" \
+            "$pkgs/Cloudy-${version}-arm64-macos.dmg" \
             "$out/darwin-arm64/${slug}-${version}-darwin-arm64.tar.gz" \
-            "$out/darwin-amd64/${slug}-${version}-amd64.dmg" \
+            "$pkgs/Cloudy-${version}-amd64-macos.dmg" \
             "$out/darwin-amd64/${slug}-${version}-darwin-amd64.tar.gz"
           gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber \
             "$out/darwin-arm64/update-darwin-arm64.json" \

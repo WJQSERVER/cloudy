@@ -43,7 +43,7 @@ nya 维护的第三方网易云音乐 Windows 客户端（原名 Cloud-nya），
 
 ## 下载
 
-到 [Releases](https://github.com/nya-owo/cloudy/releases) 下载安装包：
+到 [Releases](https://github.com/nya-owo/cloudy/releases) 下载安装包。安装包排在文件列表最前面，文件名写明了架构和系统，例如 `Cloudy-1.3.10-arm64-macos.dmg`（amd64 是 x64 / Intel，arm64 是 ARM64 / Apple 芯片）：
 
 - **Windows（x64 和 ARM64）**：安装包没有代码签名，Windows 可能提示“已保护你的电脑”，点“更多信息”后选“仍要运行”。
 - **macOS（Apple Silicon 和 Intel，实验性，macOS 13.0+）**：下载对应架构的 `.dmg` 并拖入「应用程序」。安装包未经过 Apple 开发者签名和公证，首次打开若提示“已损坏，无法打开”，在终端执行一次：
@@ -59,7 +59,7 @@ nya 维护的第三方网易云音乐 Windows 客户端（原名 Cloud-nya），
   ```
 
   未签名的 macOS 构建会将登录态保存在用户数据目录的私有文件（`0600`）中，避免应用内自动更新后反复弹出钥匙串密码或丢失登录。
-- **Linux（x64 和 ARM64，实验性）**：推荐用上面同一行命令安装，装在 `~/.local` 里，不需要 root，之后能在软件里自动更新。Debian / Ubuntu 也可以下载 `.deb` 用 `sudo apt install ./cloudy_*.deb` 安装，但 `.deb` 装的版本不能自动更新，新版本要再下载 `.deb` 安装。需要 GTK 3；声音走 PulseAudio / PipeWire，没有时用 ALSA。登录态存在系统钥匙串（GNOME Keyring、KWallet 等），没有钥匙串服务时改存用户数据目录里的私有文件。
+- **Linux（x64 和 ARM64，实验性）**：推荐用上面同一行命令安装，装在 `~/.local` 里，不需要 root，之后能在软件里自动更新。Debian / Ubuntu 也可以下载 `.deb` 用 `sudo apt install ./Cloudy-*-linux.deb` 安装，但 `.deb` 装的版本不能自动更新，新版本要再下载 `.deb` 安装。需要 GTK 3；声音走 PulseAudio / PipeWire，没有时用 ALSA。登录态存在系统钥匙串（GNOME Keyring、KWallet 等），没有钥匙串服务时改存用户数据目录里的私有文件。
 
   Linux 版还没有在真机上充分测试，以下功能暂不可用或受限：
   - 桌面歌词锁定后鼠标不能穿透

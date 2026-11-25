@@ -83,3 +83,24 @@ jobs:
           for name in install.ps1 SHA256SUMS; do
             gh release delete-asset "$GITHUB_REF_NAME" "$name" --repo "$GITHUB_REPOSITORY" --yes || true
           done
+      # Installers are named Cloudy-<version>-<arch>-<os>...: GitHub lists a
+      # release's files by name, ignoring case, and the architecture first
+      # (amd64, arm64) puts all six installers over the update archives
+      # (cloudy-<version>-darwin-...), whose names install.sh relies on. The
+      # same in release-linux.yml and release-macos*.yml.
+      - name: Name the installers
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          for arch in amd64 arm64; do
+            from="cloudy-setup-${version}-${arch}.exe"
+            to="Cloudy-${version}-${arch}-windows-setup.exe"
+            url="$(gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json assets \
+              -q ".assets[] | select(.name == \"$from\") | .apiUrl")"
+            test -n "$url"
+            # Run again, the installer was uploaded anew under its old name.
+            gh release delete-asset "$GITHUB_REF_NAME" "$to" --repo "$GITHUB_REPOSITORY" --yes || true
+            gh api -X PATCH "$url" -f name="$to" > /dev/null
+          done

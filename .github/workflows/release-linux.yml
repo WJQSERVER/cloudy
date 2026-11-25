@@ -79,10 +79,16 @@ jobs:
           # go before the manifests, so installed apps never see a manifest
           # pointing at a missing archive. SHA256SUMS stays out, matching
           # release.yml.
+          # Installers as Cloudy-<version>-<arch>-<os>, over the archives in
+          # the release's list (see release.yml's "Name the installers").
+          pkgs="$RUNNER_TEMP/pkgs"
+          mkdir -p "$pkgs"
+          cp "$out"/linux-amd64/*.deb "$pkgs/Cloudy-${version}-amd64-linux.deb"
+          cp "$out"/linux-arm64/*.deb "$pkgs/Cloudy-${version}-arm64-linux.deb"
           gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber \
-            "$out"/linux-amd64/*.deb \
+            "$pkgs/Cloudy-${version}-amd64-linux.deb" \
             "$out/linux-amd64/${slug}-${version}-linux-amd64.tar.gz" \
-            "$out"/linux-arm64/*.deb \
+            "$pkgs/Cloudy-${version}-arm64-linux.deb" \
             "$out/linux-arm64/${slug}-${version}-linux-arm64.tar.gz" \
             "$out/linux-amd64/install.sh"
           gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber \
