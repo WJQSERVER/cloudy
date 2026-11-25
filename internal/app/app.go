@@ -403,6 +403,7 @@ func Run() error {
 	a.useUpdater()
 	mygo.App.WhenReady(func() {
 		a.settings = loadSettings()
+		netease.StartDiagLog(mygo.App.Version())
 		ui.SetIgnoreReduceMotion(a.settings.IgnoreSystemMotion)
 		a.applyUpdateSource()
 		a.applyOutput()
