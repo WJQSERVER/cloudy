@@ -677,7 +677,8 @@ func streamFromSongURLData(code int, d songURLData, level string) (*Stream, erro
 			s.Type = "flac"
 		}
 	}
-	if s.Type != "" && s.Type != "mp3" && s.Type != "flac" {
+	// WAV is the cloud drive's, of songs the listener uploaded (#54).
+	if s.Type != "mp3" && s.Type != "flac" && s.Type != "wav" {
 		return nil, fmt.Errorf("%w %s", errUnsupportedFormat, s.Type)
 	}
 	if d.Peak != nil {
