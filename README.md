@@ -52,7 +52,23 @@ nya 维护的第三方网易云音乐 Windows 客户端（原名 Cloud-nya），
   xattr -cr /Applications/Cloudy.app
   ```
 
+  也可以在终端用一行命令安装最新版，这样装的不会被拦：
+
+  ```bash
+  curl -fsSL https://github.com/nya-owo/cloudy/releases/latest/download/install.sh | sh
+  ```
+
   未签名的 macOS 构建会将登录态保存在用户数据目录的私有文件（`0600`）中，避免应用内自动更新后反复弹出钥匙串密码或丢失登录。
+- **Linux（x64 和 ARM64，实验性）**：推荐用上面同一行命令安装，装在 `~/.local` 里，不需要 root，之后能在软件里自动更新。Debian / Ubuntu 也可以下载 `.deb` 用 `sudo apt install ./cloudy_*.deb` 安装，但 `.deb` 装的版本不能自动更新，新版本要再下载 `.deb` 安装。需要 GTK 3；声音走 PulseAudio / PipeWire，没有时用 ALSA。登录态存在系统钥匙串（GNOME Keyring、KWallet 等），没有钥匙串服务时改存用户数据目录里的私有文件。
+
+  Linux 版还没有在真机上充分测试，以下功能暂不可用或受限：
+  - 桌面歌词锁定后鼠标不能穿透
+  - Wayland 下窗口位置记不住，全局快捷键要经系统授权
+  - 没有任务栏缩略图和缩略图按钮
+  - 不能选择音频输出设备
+  - 本地音乐文件夹不会自动刷新
+
+  遇到问题欢迎在 [Issues](https://github.com/nya-owo/cloudy/issues) 里反馈，写上发行版和桌面环境（GNOME / KDE…，X11 还是 Wayland）。
 
 ## 原项目的功能
 
