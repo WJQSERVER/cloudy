@@ -20,8 +20,9 @@ func deskTestApp(text string) *app {
 	return a
 }
 
-// A line too long for the desktop lyrics shows whole, smaller or on two
-// lines: it was cut to its start and an ellipsis.
+// A line too long for the desktop lyrics shows smaller, or as small as it
+// goes and sliding as it is sung: it was cut to its start and an ellipsis,
+// then went on two lines.
 func TestDeskLongLineFits(t *testing.T) {
 	long := strings.Repeat("我曾经跨过山和大海也穿过人山人海", 2)
 	longer := strings.Repeat("我曾经跨过山和大海也穿过人山人海", 4)
@@ -31,19 +32,15 @@ func TestDeskLongLineFits(t *testing.T) {
 		if main.size >= 32 {
 			t.Errorf("%d runes: still at %v", len([]rune(text)), main.size)
 		}
-		m := main
-		m.wrap = false
-		w, _ := a.deskShape(m, deskLook{}, 0, false).Size()
-		if !main.wrap && w > deskRoom {
-			t.Errorf("%d runes: on one line %v wide, in %v", len([]rune(text)), w, deskRoom)
+		w, _ := a.deskShape(main, deskLook{}, 0, false).Size()
+		if !main.scroll && w > deskRoom {
+			t.Errorf("%d runes: on one line %v wide, in %v, not sliding", len([]rune(text)), w, deskRoom)
 		}
-		if main.wrap {
-			if _, h := a.deskShape(main, deskLook{}, 0, false).Size(); h > deskH-deskToolsRoom {
-				t.Errorf("%d runes: two lines %v high, in a window %v under its tools", len([]rune(text)), h, deskH-deskToolsRoom)
-			}
+		if main.scroll && main.size < 32*deskScrollShrink-0.01 {
+			t.Errorf("%d runes: sliding at %v, smaller than it needs", len([]rune(text)), main.size)
 		}
 	}
-	if main, _ := deskTestApp("夜空中最亮的星").deskLines(); main.size != 32 || main.wrap {
+	if main, _ := deskTestApp("夜空中最亮的星").deskLines(); main.size != 32 || main.scroll {
 		t.Errorf("a short line changed: %+v", main)
 	}
 }

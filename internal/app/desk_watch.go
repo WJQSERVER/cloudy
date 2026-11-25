@@ -22,6 +22,13 @@ type deskState struct {
 	idle      bool          // nothing plays, and they hide then
 	idleSince time.Time     // when nothing has played since, or zero
 	vertical  bool          // the window is made standing up
+	// moreAt is the tools' more button, in the window; moreWin the panel
+	// it opens, and moreShut when that last closed.
+	moreAt   ui.Rect
+	bodyAt   ui.Rect // the lyrics, lying or standing, in the window
+	moreWin  *mygo.Window
+	moreShut time.Time
+	more     deskMore
 }
 
 // watchDesk follows, while the desktop lyrics are open, the pointer over

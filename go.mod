@@ -23,4 +23,4 @@ require (
 	golang.org/x/net v0.59.0 // indirect
 )
 
-replace github.com/egoist/mygo => github.com/nya-owo/mygo v0.7.1-0.20261124172446-abfb9b4a7fec
+replace github.com/egoist/mygo => github.com/nya-owo/mygo v0.7.1-0.20261125023057-28b811c76ddc

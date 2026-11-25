@@ -165,6 +165,18 @@ type settings struct {
 	// DeskHideStopped hides the desktop lyrics while nothing plays, paused
 	// or stopped, and shows them again as it plays.
 	DeskHideStopped bool `json:"deskHideStopped,omitempty"`
+	// DeskTrans shows a line's translation under it on the desktop, and
+	// DeskRoman how it reads in Latin letters (音译), both at once if both
+	// are on.
+	// DeskNext shows the line that follows when neither is shown.
+	DeskTrans bool `json:"deskTrans"`
+	DeskRoman bool `json:"deskRoman,omitempty"`
+	DeskNext  bool `json:"deskNext"`
+	// DeskColor is the color the desktop lyrics light in: "" for the
+	// cover's, "accent" for the app's, else one of deskColors.
+	DeskColor string `json:"deskColor,omitempty"`
+	// DeskFont is the desktop lyrics' own font, "" for the lyrics'.
+	DeskFont string `json:"deskFont,omitempty"`
 	// NpWholeLines lights the line sung in Now Playing whole, at once,
 	// rather than word by word as it is sung.
 	NpWholeLines bool `json:"npWholeLines,omitempty"`
@@ -296,7 +308,7 @@ type settings struct {
 }
 
 func defaultSettings() settings {
-	return settings{UpdateChecks: true, BarSpin: true, GlobalKeys: true, NotchActivity: true, Quality: "exhigh", Appearance: "system", LiquidGlass: true, SidebarGlass: true, MainGlass: true, NpLight: true, GlowLevel: 0.5, GlassClear: 0.6, GlassBend: 0.3, GlassPanels: true, Volume: 0.8, Normalize: true, AppIcon: "dock-and-menubar", CacheMB: 2048, Captions: true, LyricTrans: true, LyricBlur: true, NpCalm: true, LyricBlurLevel: 0.5, MoreWords: true, LyricTilt: 0.5, LyricBounce: 0.5, DeskWords: true}
+	return settings{UpdateChecks: true, BarSpin: true, GlobalKeys: true, NotchActivity: true, Quality: "exhigh", Appearance: "system", LiquidGlass: true, SidebarGlass: true, MainGlass: true, NpLight: true, GlowLevel: 0.5, GlassClear: 0.6, GlassBend: 0.3, GlassPanels: true, Volume: 0.8, Normalize: true, AppIcon: "dock-and-menubar", CacheMB: 2048, Captions: true, LyricTrans: true, LyricBlur: true, NpCalm: true, LyricBlurLevel: 0.5, MoreWords: true, LyricTilt: 0.5, LyricBounce: 0.5, DeskWords: true, DeskTrans: true, DeskNext: true}
 }
 
 func (s settings) playerGlass() bool {

@@ -1113,7 +1113,7 @@ func (p *Player) open(t netease.Track, level string) (*netease.Stream, stream, e
 var songURL = netease.SongURLContext
 
 // lyricsOf fetches a song's lyrics; tests keep it off the network.
-var lyricsOf = netease.Lyrics
+var lyricsOf = netease.LyricsWithRoman
 
 var errNoLyrics = errors.New("player: no lyrics")
 

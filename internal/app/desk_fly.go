@@ -45,6 +45,19 @@ type deskFlight struct {
 	// line again; zero before.
 	landed time.Time
 	ending int // frames since
+	// sprites flies the characters each drawn on its own, as standing
+	// lyrics are (desk_sprites.go): turning, between lying and standing,
+	// from src, where they were; going back into the button, from src too.
+	// origin is the flight's window's corner on the screen.
+	sprites, turning bool
+	src              []deskSprite
+	origin           ui.Point
+	waited           int // frames waiting for where they go
+	// turnPending says the window is yet to be made again, standing as
+	// turnTo says, at turnAt, once the flight shows.
+	turnPending bool
+	turnTo      bool
+	turnAt      mygo.Rectangle
 }
 
 // deskMain is the line the desktop lyrics show large: its text, its words
@@ -53,16 +66,25 @@ type deskMain struct {
 	text  string
 	words []lyrics.Word
 	size  float32
-	wrap  bool // on two lines, too long for one
+	// scroll says it is too long for its room even smaller: it slides
+	// along as it is sung, from at to end (deskScrollLine).
+	scroll  bool
+	at, end time.Duration
+	// reading is how the line reads (音译), over it lying, to its right
+	// standing.
+	reading string
 }
 
 const (
 	// deskRoom is how wide a line of the desktop lyrics may be: the window,
 	// less its sides, a capsule's and an edge's.
 	deskRoom = deskW - 48 - 56 - 8
-	// deskShrink is how much smaller than its size a line too long goes,
-	// at most, to fit on one line; longer, it goes on two.
+	// deskShrink is how much smaller than its size the line under the one
+	// sung goes, at most, to fit; longer, it ends in an ellipsis.
 	deskShrink = 0.72
+	// deskScrollShrink is how much smaller than its size the line sung
+	// goes, at most, to fit; longer, it slides along as it is sung.
+	deskScrollShrink = 0.85
 )
 
 // deskLines returns the line the desktop lyrics show large, and the one
@@ -82,50 +104,45 @@ func (a *app) deskLines() (main deskMain, next string) {
 		return deskMain{text: tr.Name, size: 30 * scale}, ""
 	}
 	l := &lines[cur]
-	main = deskMain{text: l.Text, words: l.Words, size: 32 * scale}
-	switch {
-	case l.Translation != "" && a.settings.LyricTrans:
-		next = l.Translation
-	case cur+1 < len(lines):
-		next = lines[cur+1].Text
+	s := &a.settings
+	main = deskMain{text: l.Text, words: l.Words, size: 32 * scale, at: l.At, end: l.End}
+	var subs []string
+	if s.DeskTrans && l.Translation != "" {
+		subs = append(subs, l.Translation)
 	}
-	if a.settings.DeskVertical {
+	if s.DeskRoman && l.Roman != "" {
+		main.reading = l.Roman
+	}
+	if len(subs) == 0 && s.DeskNext && cur+1 < len(lines) {
+		subs = append(subs, lines[cur+1].Text)
+	}
+	if len(subs) > 0 {
+		next = subs[0]
+	}
+	if s.DeskVertical {
 		return main, next // standing, deskColumns fits them
 	}
-	under := float32(0)
-	if next != "" {
-		under = a.deskNextSize(next, 19*scale)
-	}
-	main.size, main.wrap = a.deskFit(main, under)
+	main.size, main.scroll = a.deskFit(main)
 	return main, next
 }
 
-// deskFit returns the size the line m shows at, and whether on two lines:
-// as large as it is if it fits, smaller, down to deskShrink of that, if
-// that has it fit, and else on two lines, no larger than leaves room for the
-// line under it, of size under, in the window. Cut short, a long line was
-// only its start and an ellipsis.
-func (a *app) deskFit(m deskMain, under float32) (float32, bool) {
+// deskReadingSize is the size of the line's reading, of its size as
+// designed.
+const deskReadingSize = 16
+
+// deskFit returns the size the line m shows at, and whether it slides: as
+// large as it is if it fits, smaller, down to deskScrollShrink of that, if
+// that has it fit, and else that small, sliding along as it is sung. On two
+// lines, a long line was hard to follow; cut short, only its start showed.
+func (a *app) deskFit(m deskMain) (float32, bool) {
 	w, _ := a.deskShape(m, deskLook{}, 0, false).Size()
 	if w <= deskRoom {
 		return m.size, false
 	}
-	if fit := m.size * deskRoom / w * 0.98; fit >= m.size*deskShrink {
+	if fit := m.size * deskRoom / w * 0.98; fit >= m.size*deskScrollShrink {
 		return fit, false
 	}
-	m.wrap = true
-	room := float32(deskH - deskToolsRoom - 20 - 6) // the capsule's padding, and some
-	if under > 0 {
-		room -= under*1.4 + 3
-	}
-	size := m.size * deskShrink
-	for ; size > 14; size *= 0.94 {
-		m.size = size
-		if _, h := a.deskShape(m, deskLook{}, 0, false).Size(); h <= room {
-			break
-		}
-	}
-	return size, true
+	return m.size * deskScrollShrink, true
 }
 
 // deskNextSize returns the size the line under the one sung shows at: as
@@ -148,6 +165,8 @@ func (a *app) deskNextSize(text string, size float32) float32 {
 func (a *app) deskFlyShown(now time.Time) (line, next float32) {
 	f := &a.deskFly
 	switch {
+	case f.turnPending:
+		return 1, 1 // the window still shows them, the flight not yet
 	case f.win != nil && f.opening && f.landed.IsZero():
 		return 0, 0
 	case f.win != nil && !f.opening && f.frames > 1:
@@ -176,13 +195,15 @@ func (a *app) startDeskFly(opening bool, desk mygo.Rectangle) bool {
 		return false
 	}
 	main, _ := a.deskLines()
-	if strings.TrimSpace(main.text) == "" || main.wrap || a.settings.DeskVertical {
-		// On two lines, or standing, it shows at once, not character by
-		// character.
+	if strings.TrimSpace(main.text) == "" || main.scroll && !a.settings.DeskVertical {
+		// Sliding, it shows at once, not character by character.
 		return false
 	}
 	cb := a.win.ContentBounds()
 	btn := ui.Rect{X: float32(cb.X) + a.deskBtn.X, Y: float32(cb.Y) + a.deskBtn.Y, W: a.deskBtn.W, H: a.deskBtn.H}
+	if a.settings.DeskVertical {
+		return a.startDeskStandFly(opening, desk, btn, main.size)
+	}
 	// Where the line lies: as the lyrics' window laid it out last, going
 	// back; coming out, reckoned as it will, until it does.
 	at := a.deskLineAt
@@ -234,16 +255,35 @@ func (a *app) deskFlyView(c *ui.Context) {
 	}
 	f.last = now
 	f.frames++
+	if f.turnPending && f.frames >= 2 {
+		// The characters show now, over the window: it can be made again.
+		f.turnPending = false
+		a.post(a.finishDeskTurn)
+	}
 	if f.frames == 2 && !f.opening && a.deskWin != nil {
 		// The flight shows the line now: its window can leave it to it.
 		a.deskWin.Invalidate()
 	}
-	n := len(deskGlyphs(a.deskShape(f.line, a.deskLookOf(a.settings.DeskStyle), 0, false), f.line))
-	_, total := deskFlyLags(n)
+	var total time.Duration
+	if f.sprites {
+		from, to, ok := a.deskFlySprites(f)
+		if !ok && f.waited < 45 {
+			// The lyrics' window has yet to lay them out: time waits.
+			f.waited++
+			f.gone = 0
+		}
+		_, _, total = deskSpriteTiming(f, max(len(from), len(to)))
+		if !ok && f.waited >= 45 {
+			f.gone = total
+		}
+	} else {
+		n := len(deskGlyphs(a.deskShape(f.line, a.deskLookOf(a.settings.DeskStyle), 0, false), f.line))
+		_, total = deskFlyLags(n)
+	}
 	k := float32(f.gone) / float32(total)
 	// The lyrics' window, its capsule if it has one, comes in as the
 	// characters near it, or goes as they leave.
-	if a.deskWin != nil {
+	if a.deskWin != nil && !f.turnPending {
 		if f.opening {
 			a.deskWin.SetOpacity(float64(easeRange(k, 0.5, 0.92)))
 		} else if !a.settings.DeskLyrics {
@@ -281,6 +321,7 @@ func (a *app) deskFlyView(c *ui.Context) {
 		case a.deskWin == nil:
 		case a.settings.DeskLyrics:
 			a.deskWin.SetOpacity(1)
+			a.placeDeskMore()
 		case !opening:
 			a.dropFloat(&a.deskWin)
 		}
@@ -292,13 +333,23 @@ func (a *app) deskFlyView(c *ui.Context) {
 // to where they land, and a ring going out of the button as they leave it
 // or come back.
 func (a *app) paintDeskFly(p *ui.Painter, f *deskFlight, gone time.Duration) {
+	bx, by := f.from.X+f.from.W/2, f.from.Y+f.from.H/2
+	if f.sprites {
+		a.paintDeskSprites(p, f, gone)
+		if f.turning {
+			return
+		}
+		from, to, _ := a.deskFlySprites(f)
+		_, _, total := deskSpriteTiming(f, max(len(from), len(to)))
+		a.paintDeskRipple(p, f, gone, total, bx, by)
+		return
+	}
 	look := a.deskLookOf(a.settings.DeskStyle)
 	pos := a.lyricPos()
 	ink := a.deskShape(f.line, look, pos, true)
 	glyphs := deskGlyphs(ink, f.line)
 	lag, total := deskFlyLags(len(glyphs))
 	ox, oy := f.desk.X+f.at.X, f.desk.Y+f.at.Y
-	bx, by := f.from.X+f.from.W/2, f.from.Y+f.from.H/2
 	a.paintDeskGlyphs(p, f.line, look, pos, ox, oy, func(i int, g ui.Rect) (k float32, turn float32) {
 		// Back, the way out run backwards: the last one out goes first,
 		// from the end of the line, none crossing those still in it.
@@ -317,6 +368,12 @@ func (a *app) paintDeskFly(p *ui.Painter, f *deskFlight, gone time.Duration) {
 		}
 		return u, turn
 	}, bx, by)
+	a.paintDeskRipple(p, f, gone, total, bx, by)
+}
+
+// paintDeskRipple paints the ring around the button the characters fly out
+// of, or back into, total being how long they take.
+func (a *app) paintDeskRipple(p *ui.Painter, f *deskFlight, gone, total time.Duration, bx, by float32) {
 	// A ring goes out from the button as they leave it, or as the last of
 	// them comes back into it: a thin one, around the icon, never over it.
 	accent := a.pal.accent
@@ -341,9 +398,6 @@ func (a *app) paintDeskFly(p *ui.Painter, f *deskFlight, gone time.Duration) {
 func (a *app) deskShape(m deskMain, look deskLook, pos time.Duration, colored bool) *ui.TextLayout {
 	font := ui.Font{Family: a.deskFamily(), Size: m.size, Weight: 800}
 	width := float32(0)
-	if m.wrap {
-		width = deskRoom
-	}
 	if len(m.words) == 0 {
 		return ui.ShapeText(m.text, font, width)
 	}
@@ -359,6 +413,9 @@ func (a *app) deskShape(m deskMain, look deskLook, pos time.Duration, colored bo
 
 // deskFamily is the font of the desktop lyrics.
 func (a *app) deskFamily() string {
+	if a.settings.DeskFont != "" {
+		return familyOf(a.settings.DeskFont)
+	}
 	if a.settings.LyricFont != "" {
 		return a.lyricFamily()
 	}
