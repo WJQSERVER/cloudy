@@ -17,9 +17,14 @@ import (
 
 // The listener's session is NetEase's login cookie, MUSIC_U, which every
 // request carries once signed in. The app keeps it in the system's
-// keychain. Development builds keep it in a private file instead: each
-// rebuild is signed anew, and the keychain would ask before every one of
-// them read it.
+// keychain. Development builds and unsigned/ad-hoc signed macOS builds keep
+// it in a private file instead: each rebuild or update gets a new ad-hoc
+// signature, and the macOS keychain would prompt or lose access after every
+// one of them.
+
+func useSessionFile() bool {
+	return mygo.IsDev() || preferSessionFile()
+}
 
 const sessionSecret = "netease-session"
 
@@ -32,7 +37,7 @@ func sessionFile() (string, error) {
 }
 
 func readSession() ([]byte, error) {
-	if !mygo.IsDev() {
+	if !useSessionFile() {
 		return mygo.Secrets.Get(sessionSecret)
 	}
 	path, err := sessionFile()
@@ -43,7 +48,7 @@ func readSession() ([]byte, error) {
 }
 
 func writeSession(b []byte) error {
-	if !mygo.IsDev() {
+	if !useSessionFile() {
 		return mygo.Secrets.Set(sessionSecret, b)
 	}
 	path, err := sessionFile()
@@ -57,7 +62,7 @@ func writeSession(b []byte) error {
 }
 
 func deleteSession() {
-	if !mygo.IsDev() {
+	if !useSessionFile() {
 		mygo.Secrets.Delete(sessionSecret)
 		return
 	}
