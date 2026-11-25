@@ -50,4 +50,3 @@ func TestIgnoreSystemMotion(t *testing.T) {
 		t.Error("无视系统动效设置 shown where it changes nothing")
 	}
 }
-

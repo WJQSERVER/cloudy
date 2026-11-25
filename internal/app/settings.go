@@ -78,7 +78,7 @@ type settings struct {
 	BarFrost      bool  `json:"barFrost,omitempty"`
 	MenuLiquid    *bool `json:"menuLiquid,omitempty"`
 	DialogLiquid  *bool `json:"dialogLiquid,omitempty"`
-	AnalysisFrost bool `json:"analysisFrost,omitempty"`
+	AnalysisFrost bool  `json:"analysisFrost,omitempty"`
 	// Motion is how much the app moves: full, lite or off.
 	Motion string `json:"motion,omitempty"`
 	// IgnoreSystemMotion keeps the app moving while the desktop asks for
