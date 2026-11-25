@@ -469,7 +469,7 @@ func (a *app) deskStanding(c *ui.Context, main deskMain, next string, pos time.D
 	pad := float32(0)
 	if look.pill.A > 0 {
 		pad = 16
-		body.Padding(pad, 10).Radius(22).Background(look.pill)
+		body.Padding(pad, 10).Radius(20).Background(look.pill)
 	}
 	room := float32(deskVH-deskToolsRoom-8) - 2*pad
 	// Where each character of the line sung stands, for those flying to
@@ -665,7 +665,7 @@ func (a *app) deskNextChange(lines []lyrics.Line, pos time.Duration) time.Durati
 // watchDesk has it.
 func (a *app) deskUnlock(c *ui.Context) {
 	ui.Row(c.Key("unlock-row")).Absolute().Top(deskToolsRoom - 35).Left(0).Right(0).Justify(ui.Center).PassThrough().Children(func() {
-		b := ui.ButtonBase(c.Key("unlock")).Size(30, 30).Radius(15).Center().FocusRing(false).Label("解锁桌面歌词")
+		b := ui.ButtonBase(c.Key("unlock")).Size(30, 30).Radius(999).Center().FocusRing(false).Label("解锁桌面歌词")
 		fade := ui.Animation{Duration: 120 * time.Millisecond}
 		bg, fg := a.miniSurface().Alpha(0.78), white.Alpha(0.8)
 		if b.Hovered() {

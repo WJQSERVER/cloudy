@@ -16,7 +16,7 @@ import (
 // in ink; chosen, ringed and checked.
 func (a *app) deskChoice(c *ui.Context, key, label string, chosen bool, fill func(ui.Element), ink ui.Color, do func()) {
 	fade := ui.Animation{Duration: 140 * time.Millisecond}
-	b := ui.ButtonBase(c.Key(key)).Height(32).Grow(1).Basis(0).Radius(16).Center().Gap(5).FocusRing(false).Label(label)
+	b := ui.ButtonBase(c.Key(key)).Height(32).Grow(1).Basis(0).Radius(999).Center().Gap(5).FocusRing(false).Label(label)
 	fill(b)
 	ring, width := white.Alpha(0.1), float32(1)
 	switch {
@@ -200,7 +200,7 @@ func (a *app) deskColorPicker(c *ui.Context) {
 		})
 		// The color, and its numbers to type.
 		ui.Row(c.Key("fields")).Gap(8).AlignItems(ui.End).Children(func() {
-			ui.Box(c.Key("chip")).Size(30, 30).Radius(9).Background(color).Border(1, white.Alpha(0.25)).Shrink(0)
+			ui.Box(c.Key("chip")).Size(30, 30).Radius(8).Background(color).Border(1, white.Alpha(0.25)).Shrink(0)
 			typing := false
 			a.deskField(c, "hex", "HEX", &m.hex, 2.2, &typing, func(v string) {
 				if col, ok := deskColorOf("#" + strings.TrimPrefix(strings.TrimSpace(v), "#")); ok {
@@ -286,7 +286,7 @@ func (a *app) deskFontSelect(c *ui.Context, lamp ui.Color) {
 		label = fontOf(s.DeskFont).label
 	}
 	ui.Column(c.Key("font")).Padding(6).Gap(6).Children(func() {
-		b := ui.ButtonBase(c.Key("select")).Height(44).Padding(0, 14).Gap(10).Radius(12).AlignItems(ui.Center).FocusRing(false).Label("桌面歌词字体")
+		b := ui.ButtonBase(c.Key("select")).Height(44).Padding(0, 14).Gap(10).Radius(14).AlignItems(ui.Center).FocusRing(false).Label("桌面歌词字体")
 		bg := white.Alpha(0.06)
 		if b.Hovered() || m.fonts {
 			bg = white.Alpha(0.1)
@@ -313,7 +313,7 @@ func (a *app) deskFontSelect(c *ui.Context, lamp ui.Color) {
 			return
 		}
 		// The search, over the list.
-		field := ui.Row(c.Key("search")).Height(34).Padding(0, 10).Gap(7).Radius(10).AlignItems(ui.Center).Background(white.Alpha(0.07))
+		field := ui.Row(c.Key("search")).Height(34).Padding(0, 10).Gap(7).Radius(8).AlignItems(ui.Center).Background(white.Alpha(0.07))
 		field.Children(func() {
 			ui.Icon(c, iconSearch).Size(13, 13).TextColor(white.Alpha(0.5))
 			in := ui.TextInputBase(c.Key("query"), &m.query).Grow(1).MinWidth(0).FontSize(12.5).TextColor(white).
@@ -382,7 +382,7 @@ func (a *app) deskFontList(c *ui.Context, lamp ui.Color) {
 	last := min(len(items), int((m.list.Y+listH)/deskFontRow)+5)
 	first = min(first, last)
 	fade := ui.Animation{Duration: 120 * time.Millisecond}
-	ui.Scroll(c.Key("fonts")).Height(listH).TrackScroll(&m.list).Radius(12).Background(ui.RGBA(0, 0, 0, 0.16)).Padding(4).Children(func() {
+	ui.Scroll(c.Key("fonts")).Height(listH).TrackScroll(&m.list).Radius(14).Background(ui.RGBA(0, 0, 0, 0.16)).Padding(4).Children(func() {
 		if len(items) == 0 {
 			ui.Text(c, "没有找到匹配的字体").FontSize(12).TextColor(white.Alpha(0.45)).Margin(16, 12)
 			return
@@ -397,7 +397,7 @@ func (a *app) deskFontList(c *ui.Context, lamp ui.Color) {
 				continue
 			}
 			chosen := s.DeskFont == it.id
-			b := ui.ButtonBase(c.Key(i)).Height(deskFontRow).Padding(0, 10).Gap(8).Radius(9).AlignItems(ui.Center).FocusRing(false).Label(it.label)
+			b := ui.ButtonBase(c.Key(i)).Height(deskFontRow).Padding(0, 10).Gap(8).Radius(8).AlignItems(ui.Center).FocusRing(false).Label(it.label)
 			bg := ui.Transparent
 			switch {
 			case chosen:

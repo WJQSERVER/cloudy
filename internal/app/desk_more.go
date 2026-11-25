@@ -324,7 +324,7 @@ func (a *app) deskMoreView(c *ui.Context) {
 func (a *app) deskMoreHead(c *ui.Context, lamp ui.Color) {
 	fade := ui.Animation{Duration: 140 * time.Millisecond}
 	ui.Row(c.Key("head")).Padding(16, 14, 10, 16).Gap(11).AlignItems(ui.Center).Children(func() {
-		ui.Box(c.Key("tile")).Size(34, 34).Radius(11).Center().Background(lamp.Alpha(0.18)).
+		ui.Box(c.Key("tile")).Size(34, 34).Radius(8).Center().Background(lamp.Alpha(0.18)).
 			Border(1, lamp.Alpha(0.3)).TextColor(lamp).Children(func() {
 			ui.Icon(c, iconLyrics).Size(17, 17)
 		})
@@ -351,7 +351,7 @@ func (a *app) deskMoreHead(c *ui.Context, lamp ui.Color) {
 func (a *app) deskGroup(c *ui.Context, heading string, body func(rule func())) {
 	ui.Column(c.Key("group-"+heading)).Gap(7).Margin(10, 0, 0, 0).Children(func() {
 		ui.Text(c, heading).FontSize(11.5).FontWeight(700).TextColor(white.Alpha(0.5)).Margin(0, 4, 0, 4)
-		card := ui.Column(c.Key("card")).Radius(16).Background(white.Alpha(0.045)).Border(1, white.Alpha(0.07)).Padding(4)
+		card := ui.Column(c.Key("card")).Radius(14).Background(white.Alpha(0.045)).Border(1, white.Alpha(0.07)).Padding(4)
 		card.Children(func() {
 			n := 0
 			body(func() {
@@ -365,7 +365,7 @@ func (a *app) deskGroup(c *ui.Context, heading string, body func(rule func())) {
 // deskToggle is a row of a group that turns a setting on or off.
 func (a *app) deskToggle(c *ui.Context, key, label, note string, on *bool, fit bool, lamp ui.Color) {
 	fade := ui.Animation{Duration: 140 * time.Millisecond}
-	b := ui.ButtonBase(c.Key(key)).Padding(9, 10).Gap(12).Radius(12).AlignItems(ui.Center).FocusRing(false).Label(label)
+	b := ui.ButtonBase(c.Key(key)).Padding(9, 10).Gap(12).Radius(14).AlignItems(ui.Center).FocusRing(false).Label(label)
 	bg := ui.Transparent
 	if b.Hovered() {
 		bg = white.Alpha(0.05)
@@ -388,13 +388,13 @@ func (a *app) deskToggle(c *ui.Context, key, label, note string, on *bool, fit b
 // deskSwitch is a switch, on or off, lit in lamp.
 func (a *app) deskSwitch(c *ui.Context, on bool, lamp ui.Color) {
 	fade := ui.Animation{Duration: 180 * time.Millisecond}
-	track := ui.Box(c.Key("switch")).Size(38, 22).Radius(11).Shrink(0).PassThrough()
+	track := ui.Box(c.Key("switch")).Size(38, 22).Radius(999).Shrink(0).PassThrough()
 	bg, edge, x := white.Alpha(0.12), white.Alpha(0.1), float32(0)
 	if on {
 		bg, edge, x = lamp, lamp.Mix(white, 0.3), 16
 	}
 	track.Background(track.AnimateColor("bg", bg, fade)).Border(1, track.AnimateColor("edge", edge, fade)).Children(func() {
-		ui.Box(c.Key("knob")).Size(18, 18).Radius(9).Absolute().Left(1).Top(1).Background(white).
+		ui.Box(c.Key("knob")).Size(18, 18).Radius(999).Absolute().Left(1).Top(1).Background(white).
 			Shadow(0, 1, 4, 0, ui.RGBA(0, 0, 0, 0.35)).PassThrough().
 			AnimatePose(ui.Pose{X: x}, ui.Animation{Spring: ui.SpringOptions{Duration: 260 * time.Millisecond, Bounce: 0.22}})
 	})
