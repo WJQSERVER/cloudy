@@ -21,10 +21,10 @@ type deskState struct {
 	unlockWin   *mygo.Window
 	unlockSince time.Time
 	covered     bool      // something full screen is in front
-	checked   time.Time     // when that was last asked
-	idle      bool          // nothing plays, and they hide then
-	idleSince time.Time     // when nothing has played since, or zero
-	vertical  bool          // the window is made standing up
+	checked     time.Time // when that was last asked
+	idle        bool      // nothing plays, and they hide then
+	idleSince   time.Time // when nothing has played since, or zero
+	vertical    bool      // the window is made standing up
 	// moreAt is the tools' more button, in the window; moreWin the panel
 	// it opens, and moreShut when that last closed.
 	moreAt ui.Rect
