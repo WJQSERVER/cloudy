@@ -45,7 +45,7 @@ func (a *app) syncThumbs() {
 			playing: a.pl.Playing(),
 			dark:    a.thumbDark,
 			liked:   a.isLiked(tr),
-			canLike: tr.LocalPath == "",
+			canLike: !heartless(tr),
 		}
 	}
 	st.switcher = a.altTab

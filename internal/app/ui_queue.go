@@ -111,8 +111,14 @@ func (a *app) queueRows(c *ui.Context, list *ui.ListState, at *int, look queueLo
 				}
 			})
 		})
-		if row.Clicked() && tr.Playable() && !playing {
-			pl.Jump(i)
+		if row.Clicked() && !playing {
+			if tr.Playable() {
+				pl.Jump(i)
+			} else {
+				// It may play now, a membership renewed: the player takes
+				// the answer by ID.
+				a.playGrey([]netease.Track{*tr}, 0, func() { pl.Jump(i) })
+			}
 		}
 	}).Grow(1).Padding(8, 0, 40, 0).Gap(2)
 }

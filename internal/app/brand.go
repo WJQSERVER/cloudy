@@ -103,20 +103,42 @@ func (a *app) splash(c *ui.Context) {
 	if a.splashAt.IsZero() {
 		a.splashAt = now
 	}
-	if now.Sub(a.splashAt) >= splashEnd {
+	gone := now.Sub(a.splashAt)
+	if gone >= splashTotal {
 		a.splashed = true
 		return
 	}
 	// A build once it is over, to take it away; the frames until then only paint.
-	c.After(splashEnd - now.Sub(a.splashAt))
+	c.After(splashTotal - gone)
 	bg, dark := a.pal.bg, a.pal.dark
 	ui.Box(c.Key("splash")).Absolute().Top(0).Left(0).Right(0).Bottom(0).PassThrough().Draw(func(p *ui.Painter, r ui.Rect) {
-		t := float32(p.Now().Sub(a.splashAt).Milliseconds())
-		if t < float32(splashEnd.Milliseconds()) {
+		gone := p.Now().Sub(a.splashAt)
+		if gone < splashTotal {
 			p.AnimationFrame()
 		}
-		a.drawSplash(p, r, t, bg, dark)
+		a.drawSplash(p, r, float32(splashTime(gone).Milliseconds()), bg, dark)
 	})
+}
+
+// The icon, its name under it, stays a while before the record rises off
+// it and flies into the bar: 2.5 s in all (1.3.10, the user's choice; the
+// 1.18 s of before went by too fast to read it).
+const (
+	splashHoldAt = 200 * time.Millisecond // the icon in, its name shown
+	splashHold   = splashTotal - splashEnd
+	splashTotal  = 2500 * time.Millisecond
+)
+
+// splashTime is where in the start's course (drawSplash's t) it is, gone
+// after it began: held at splashHoldAt for splashHold.
+func splashTime(gone time.Duration) time.Duration {
+	switch {
+	case gone <= splashHoldAt:
+		return gone
+	case gone <= splashHoldAt+splashHold:
+		return splashHoldAt
+	}
+	return gone - splashHold
 }
 
 // drawSplash paints the start at t ms.
@@ -152,7 +174,7 @@ func (a *app) drawSplash(p *ui.Painter, r ui.Rect, t float32, bg ui.Color, dark 
 	}
 
 	// The icon: its base, the record on it, the arm on the record.
-	iconIn := span(0, 260)
+	iconIn := span(0, 200) // at rest by the hold
 	baseOut := span(380, 660)
 	baseAlpha := 1 - out3(baseOut)
 	scale := lerp(.6, 1, back(iconIn)) * lerp(1, .9, out3(baseOut))
@@ -236,13 +258,13 @@ func (a *app) drawSplash(p *ui.Painter, r ui.Rect, t float32, bg ui.Color, dark 
 	}
 
 	// The name under the icon while it shows.
-	if name := out3(span(90, 300)) * (1 - out3(span(380, 560))) * veil; name > 0 {
+	if name := out3(span(60, 200)) * (1 - out3(span(380, 560))) * veil; name > 0 {
 		ink := ui.RGBA(29, 29, 31, .82*name)
 		if dark {
 			ink = ui.RGBA(242, 242, 244, .86*name)
 		}
 		const size = 17
-		p.Text(cx-30, cy+S*.5+28+8*(1-out3(span(90, 320))), "Cloudy", size, ink)
+		p.Text(cx-30, cy+S*.5+28+8*(1-out3(span(60, 200))), "Cloudy", size, ink)
 	}
 
 	// Landing: a soft ring out of the bar's cover.

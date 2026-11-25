@@ -609,6 +609,7 @@ func (a *app) settingsHomePage(k *settingsKit) {
 	s := &a.settings
 	a.deckSettings(k)
 	k.group("侧边栏", func() {
+		a.sideSettings(k)
 		k.rowOf(settingRow{label: "侧边栏大小", desc: "歌单、专辑的封面和文字大小",
 			tip: "拖动侧边栏右边缘可以调整宽度，双击边缘恢复"}, func() {
 			labels := make([]string, len(sidebarSizes))

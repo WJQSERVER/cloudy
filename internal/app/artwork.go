@@ -54,6 +54,9 @@ type artCache struct {
 	limit int
 	// adds counts the covers put in, for sweepGone to look now and then.
 	adds int
+	// disk keeps the bytes fetched, for them to come back without the
+	// network (art_disk.go); nil keeps none.
+	disk *artDisk
 }
 
 // artLimit is how many bytes of covers the cache keeps. A cover keeps its
@@ -179,7 +182,7 @@ func (c *artCache) getArtwork(url string, backdrop, sticker, animate bool) *artw
 	c.busy[key] = true
 	go func() {
 		c.sem <- struct{}{}
-		a, err := loadArt(url, backdrop, sticker, animate)
+		a, err := loadArtVia(c.disk, url, backdrop, sticker, animate)
 		<-c.sem
 		c.post(func() {
 			delete(c.busy, key)
@@ -210,14 +213,32 @@ const artRelease = time.Second
 const artRetry = 30 * time.Second
 
 func loadArt(url string, backdrop, sticker, animate bool) (*artwork, error) {
+	return loadArtVia(nil, url, backdrop, sticker, animate)
+}
+
+// loadArtVia is loadArt, reading the bytes from disk if it keeps them,
+// and keeping those it fetches.
+func loadArtVia(disk *artDisk, url string, backdrop, sticker, animate bool) (*artwork, error) {
 	var limit int64
 	if sticker {
 		limit = stickerInputLimit
 	}
-	b, err := netease.FetchLimited(url, limit)
-	if err != nil {
-		return nil, err
+	b, kept := disk.read(url)
+	if !kept {
+		var err error
+		if b, err = netease.FetchLimited(url, limit); err != nil {
+			return nil, err
+		}
 	}
+	a, err := artOf(b, url, backdrop, sticker, animate)
+	if err == nil && !kept {
+		disk.write(url, b)
+	}
+	return a, err
+}
+
+// artOf makes the artwork of b, the bytes of the picture at url.
+func artOf(b []byte, url string, backdrop, sticker, animate bool) (*artwork, error) {
 	if animate {
 		return decodeStickerArt(b)
 	}

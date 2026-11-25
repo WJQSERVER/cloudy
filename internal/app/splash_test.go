@@ -21,7 +21,7 @@ func TestSplashPaintsOnlyAndEnds(t *testing.T) {
 	tt.Frame()
 	before := builds
 	var shots []image.Image
-	for ms := 0; ms <= 1300; ms += 16 {
+	for ms := 0; ms <= 2600; ms += 16 {
 		tt.Advance(16 * time.Millisecond)
 		if tt.FramePending() {
 			tt.Frame()
@@ -51,5 +51,36 @@ func TestSplashPaintsOnlyAndEnds(t *testing.T) {
 		png.Encode(f, sheet)
 		f.Close()
 		fmt.Println("frames at 0, 200, 400, 600, 800, 1000 ms")
+	}
+}
+
+// The start takes 2.5 s, whatever the page: the icon and its name hold,
+// then the record flies.
+func TestSplashTakesItsTime(t *testing.T) {
+	if splashTime(splashHoldAt+splashHold/2) != splashHoldAt {
+		t.Error("not held")
+	}
+	if splashTime(splashTotal) != splashEnd {
+		t.Error("the course does not end with the start")
+	}
+	a := playerBarLayoutApp()
+	a.splashed, a.motion = false, motionFull
+	tt := ui.NewTester(a.view, 1200, 780)
+	tt.Frame()
+	run := func(ms int) {
+		for ; ms > 0; ms -= 16 {
+			tt.Advance(16 * time.Millisecond)
+			if tt.FramePending() {
+				tt.Frame()
+			}
+		}
+	}
+	run(2300)
+	if a.splashed {
+		t.Fatal("went before 2.5 s")
+	}
+	run(400)
+	if !a.splashed {
+		t.Fatal("the start never went")
 	}
 }

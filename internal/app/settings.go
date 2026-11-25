@@ -253,6 +253,15 @@ type settings struct {
 	// CacheFolder is the folder the songs played are kept in, in a folder of
 	// their own; empty for the app's cache directory.
 	CacheFolder string `json:"cacheFolder,omitempty"`
+	// OtherCacheMB is how many megabytes the pictures kept on disk may
+	// take, the covers and avatars (art_disk.go), apart from the songs'.
+	OtherCacheMB int `json:"otherCacheMB"`
+	// SideOrder is the order of the sidebar's entries and groups, by
+	// sideItem id; SideHidden those it does not show, and SideFolded the
+	// groups that start folded (side_custom.go).
+	SideOrder  []string `json:"sideOrder,omitempty"`
+	SideHidden []string `json:"sideHidden,omitempty"`
+	SideFolded []string `json:"sideFolded,omitempty"`
 	// LocalFolders are the folders of the listener's own music, which the
 	// 本地音乐 page lists and watches.
 	LocalFolders []string `json:"localFolders,omitempty"`
@@ -308,7 +317,7 @@ type settings struct {
 }
 
 func defaultSettings() settings {
-	return settings{UpdateChecks: true, BarSpin: true, GlobalKeys: true, NotchActivity: true, Quality: "exhigh", Appearance: "system", LiquidGlass: true, SidebarGlass: true, MainGlass: true, NpLight: true, GlowLevel: 0.5, GlassClear: 0.6, GlassBend: 0.3, GlassPanels: true, Volume: 0.8, Normalize: true, AppIcon: "dock-and-menubar", CacheMB: 2048, Captions: true, LyricTrans: true, LyricBlur: true, NpCalm: true, LyricBlurLevel: 0.5, MoreWords: true, LyricTilt: 0.5, LyricBounce: 0.5, DeskWords: true, DeskTrans: true, DeskNext: true}
+	return settings{UpdateChecks: true, BarSpin: true, GlobalKeys: true, NotchActivity: true, Quality: "exhigh", Appearance: "system", LiquidGlass: true, SidebarGlass: true, MainGlass: true, NpLight: true, GlowLevel: 0.5, GlassClear: 0.6, GlassBend: 0.3, GlassPanels: true, Volume: 0.8, Normalize: true, AppIcon: "dock-and-menubar", CacheMB: 2048, OtherCacheMB: 200, Captions: true, LyricTrans: true, LyricBlur: true, NpCalm: true, LyricBlurLevel: 0.5, MoreWords: true, LyricTilt: 0.5, LyricBounce: 0.5, DeskWords: true, DeskTrans: true, DeskNext: true}
 }
 
 func (s settings) playerGlass() bool {
