@@ -220,18 +220,29 @@ func post(path string, form url.Values, out any) error {
 func do(req *http.Request, out any) error {
 	req.Header.Set("User-Agent", UserAgent)
 	req.Header.Set("Referer", apiBase+"/")
+	start := time.Now()
 	res, err := httpClient.Do(req)
 	if err != nil {
+		diagReply(req.Method, req.URL.Path, start, nil, nil, err)
 		return err
 	}
 	defer res.Body.Close()
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
+		diagReply(req.Method, req.URL.Path, start, nil, nil, err)
 		return err
 	}
 	var status apiError
 	if err := json.Unmarshal(body, &status); err != nil {
+		diagReply(req.Method, req.URL.Path, start, res, nil, fmt.Errorf("http %d, not JSON: %q", res.StatusCode, diagPrefix(body)))
 		return fmt.Errorf("netease: %s: %w", req.URL.Path, err)
+	}
+	diagReply(req.Method, req.URL.Path, start, res, &status, nil)
+	for _, c := range res.Cookies() {
+		if c.Name == "MUSIC_U" {
+			diagf("session now %s", diagSession())
+			break
+		}
 	}
 	if status.Code != 200 {
 		msg := status.Message
