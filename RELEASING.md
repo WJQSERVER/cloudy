@@ -1,6 +1,6 @@
 # Releasing
 
-Cloudy is released from `nya-owo/cloudy`, the remote called `fork` in the local clone. `origin` is the original project, egoist/mygo-cloudmusic, which was taken down in November 2026: never push there. Only Windows is built.
+Cloudy is released from `nya-owo/cloudy`, the remote called `fork` in the local clone. `origin` is the original project, egoist/mygo-cloudmusic, which was taken down in November 2026: never push there. Windows is the primary target; macOS (arm64 and amd64, experimental) is built in a separate workflow so macOS runner delays never block Windows releases.
 
 1. Start from the last released main, in a clean worktree, not from an old local branch:
 
@@ -34,7 +34,7 @@ Cloudy is released from `nya-owo/cloudy`, the remote called `fork` in the local 
    gh run watch "$(gh run list --repo nya-owo/cloudy --workflow release.yml -L1 --json databaseId -q '.[0].databaseId')" --repo nya-owo/cloudy --exit-status
    ```
 
-   If it fails, don't publish; fix it first. The release should hold the two installers (`cloudy-setup-*-amd64.exe`, `-arm64.exe`) and what installed apps update from (`update-windows-*.json` and the `.tar.gz` archives).
+   If it fails, don't publish; fix it first. The release should hold the two Windows installers (`cloudy-setup-*-amd64.exe`, `-arm64.exe`) and what installed apps update from (`update-windows-*.json` and the `.tar.gz` archives). `.github/workflows/release-macos.yml` runs independently on the same `v*` tag (and can be re-run via `workflow_dispatch` with a `tag` input) to upload the experimental macOS disk images (`cloudy-*-arm64.dmg`, `-amd64.dmg`), `.tar.gz` archives, and `update-darwin-*.json` manifests to the same release without blocking Windows.
 
 5. Publish the draft and mark it latest. Installed apps update to it from then on:
 
@@ -46,6 +46,8 @@ Cloudy is released from `nya-owo/cloudy`, the remote called `fork` in the local 
 
    ```bash
    curl -sL https://github.com/nya-owo/cloudy/releases/latest/download/update-windows-amd64.json
+   curl -sL https://github.com/nya-owo/cloudy/releases/latest/download/update-darwin-arm64.json
+   curl -sL https://github.com/nya-owo/cloudy/releases/latest/download/update-darwin-amd64.json
    ```
 
 The `website/` directory is the original project's site and is not deployed.
