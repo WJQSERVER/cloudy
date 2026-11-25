@@ -245,6 +245,7 @@ type app struct {
 	deskBtn               ui.Rect          // the player bar's button of the desktop lyrics, while it shows
 	deskFly               deskFlight       // the desktop lyrics on their way out of it or back
 	deskLineAt            ui.Rect          // where the desktop lyrics laid out their line last
+	desk                  deskState        // the desktop lyrics' unlock button, and what they keep out of the way of
 	sleep                 sleepState       // the timer that pauses the music
 	keys                  shortcutState    // the global keys and the menu keys
 	spin                  discState        // how far the bar's cover has turned

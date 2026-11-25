@@ -2,6 +2,7 @@ package app
 
 import (
 	"math"
+	"runtime"
 	"time"
 
 	"github.com/egoist/mygo/ui"
@@ -353,6 +354,18 @@ func (a *app) settingsLyricsPage(k *settingsKit) {
 		k.sub("逐字高亮", "", s.DeskLyrics, func() {
 			k.toggle("desk-words", "逐字高亮", &s.DeskWords, false, nil)
 		})
+		k.sub("竖排", "歌词竖着排列，一字一行，翻译在左侧", s.DeskLyrics, func() {
+			vertical := s.DeskVertical
+			k.toggle("desk-vertical", "竖排桌面歌词", &vertical, false, func() { a.setDeskVertical(vertical) })
+		})
+		k.sub("停止播放时隐藏", "暂停或停止后自动隐藏，继续播放时再出现", s.DeskLyrics, func() {
+			k.toggle("desk-hide-stopped", "停止播放时隐藏桌面歌词", &s.DeskHideStopped, false, nil)
+		})
+		if runtime.GOOS == "windows" {
+			k.sub("全屏时也显示", "关闭时，玩全屏游戏或看全屏视频会自动隐藏桌面歌词，避免掉帧", s.DeskLyrics, func() {
+				k.toggle("desk-over-fullscreen", "全屏时也显示桌面歌词", &s.DeskOverFullscreen, false, nil)
+			})
+		}
 	})
 	k.foot("桌面歌词浮在其他窗口之上；锁定后鼠标会穿过它，不挡住下面的内容。")
 }

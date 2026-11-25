@@ -78,7 +78,7 @@ type settings struct {
 	BarFrost      bool  `json:"barFrost,omitempty"`
 	MenuLiquid    *bool `json:"menuLiquid,omitempty"`
 	DialogLiquid  *bool `json:"dialogLiquid,omitempty"`
-	AnalysisFrost bool `json:"analysisFrost,omitempty"`
+	AnalysisFrost bool  `json:"analysisFrost,omitempty"`
 	// Motion is how much the app moves: full, lite or off.
 	Motion string `json:"motion,omitempty"`
 	// IgnoreSystemMotion keeps the app moving while the desktop asks for
@@ -155,6 +155,16 @@ type settings struct {
 	// DeskWords lights the line sung word by word, as it is sung; off, the
 	// whole line is lit at once.
 	DeskWords bool `json:"deskWords"`
+	// DeskOverFullscreen keeps the desktop lyrics showing while a game or
+	// a video is full screen in front; off, they hide until it leaves, for
+	// a window over a full-screen game costs it frames.
+	DeskOverFullscreen bool `json:"deskOverFullscreen,omitempty"`
+	// DeskVertical stands the desktop lyrics up, character under character,
+	// the line sung on the right and the one under it to its left.
+	DeskVertical bool `json:"deskVertical,omitempty"`
+	// DeskHideStopped hides the desktop lyrics while nothing plays, paused
+	// or stopped, and shows them again as it plays.
+	DeskHideStopped bool `json:"deskHideStopped,omitempty"`
 	// NpWholeLines lights the line sung in Now Playing whole, at once,
 	// rather than word by word as it is sung.
 	NpWholeLines bool `json:"npWholeLines,omitempty"`
