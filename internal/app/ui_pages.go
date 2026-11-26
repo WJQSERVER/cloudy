@@ -596,7 +596,7 @@ func (a *app) trackRowsGrouped(c *ui.Context, tracks []netease.Track, groups []a
 				// playing, rather than the results replacing the queue.
 				a.pl.PlayNow(*tr)
 			case tr.Playable():
-				a.pl.PlayQueue(tracks, i)
+				a.playPicked(tracks, i)
 			default:
 				// Grey, as it came: it may play now, a membership renewed.
 				search := a.route.page == pageSearch
@@ -604,7 +604,7 @@ func (a *app) trackRowsGrouped(c *ui.Context, tracks []netease.Track, groups []a
 					if search {
 						a.pl.PlayNow(tracks[i])
 					} else {
-						a.pl.PlayQueue(tracks, i)
+						a.playPicked(tracks, i)
 					}
 				})
 			}

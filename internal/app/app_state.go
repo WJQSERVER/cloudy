@@ -86,4 +86,5 @@ type settingsView struct {
 	materialOpen bool                   // the parts of the material show, to set each
 	thumbs       map[string]*sceneThumb // the backdrops' pictures on their cards
 	preview      npPreview              // Now Playing in small, at the head of its page
+	glassPv      npPreview              // the glass in small, over the two sliders that set it
 }

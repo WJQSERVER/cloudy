@@ -11,15 +11,15 @@ import (
 	"time"
 )
 
-// The issues solved and the pull requests merged, as the support page's
-// head shows them: asked of GitHub's search once a run, the first time the
+// The updates released, the issues solved and the pull requests merged, as
+// the support page's head shows them: asked of GitHub's search once a run, the first time the
 // page shows, and where GitHub cannot be reached (its API has no mirror),
 // as supporters.json last wrote them down.
 
 // supportCounts are the numbers GitHub gave this run, 0 where it gave none.
 type supportCounts struct {
-	asked       bool
-	issues, prs int
+	asked                bool
+	updates, issues, prs int
 }
 
 // supportIssueQuery and supportPRQuery are what the numbers count: issues
@@ -45,18 +45,22 @@ func (a *app) supportWorkCounts(d *supportData) (issues, prs int) {
 		go func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 			defer cancel()
+			// Each number on its own: one GitHub won't give leaves the
+			// others as it gave them.
+			updates, err := fetchReleaseCount(ctx)
+			if err != nil {
+				log.Printf("support: releases: %v", err)
+			}
 			issues, err := fetchSupportCount(ctx, supportIssueQuery)
 			if err != nil {
 				log.Printf("support: issues: %v", err)
-				return
 			}
 			prs, err := fetchSupportCount(ctx, supportPRQuery)
 			if err != nil {
 				log.Printf("support: pull requests: %v", err)
-				return
 			}
 			a.post(func() {
-				a.support.counts.issues, a.support.counts.prs = issues, prs
+				a.support.counts.updates, a.support.counts.issues, a.support.counts.prs = updates, issues, prs
 				a.redraw()
 			})
 		}()
@@ -69,6 +73,56 @@ func (a *app) supportWorkCounts(d *supportData) (issues, prs int) {
 		prs = st.counts.prs
 	}
 	return issues, prs
+}
+
+// supportUpdates is how many updates were released: GitHub's number once
+// read, else the file's. supportWorkCounts asks GitHub for it, with the
+// others.
+func (a *app) supportUpdates(d *supportData) int {
+	if n := a.support.counts.updates; n > 0 {
+		return n
+	}
+	return d.Updates
+}
+
+// fetchReleaseCount is how many releases GitHub lists, not counting drafts
+// or prereleases (the captions libraries are one); tests swap it.
+var fetchReleaseCount = func(ctx context.Context) (int, error) {
+	n := 0
+	for page := 1; page <= 10; page++ {
+		u := fmt.Sprintf("https://api.github.com/repos/%s/releases?per_page=100&page=%d", releaseRepo, page)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+		if err != nil {
+			return 0, err
+		}
+		req.Header.Set("Accept", "application/vnd.github+json")
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return 0, err
+		}
+		var out []struct {
+			Draft      bool `json:"draft"`
+			Prerelease bool `json:"prerelease"`
+		}
+		if res.StatusCode != http.StatusOK {
+			res.Body.Close()
+			return 0, fmt.Errorf("%s", res.Status)
+		}
+		err = json.NewDecoder(io.LimitReader(res.Body, 8<<20)).Decode(&out)
+		res.Body.Close()
+		if err != nil {
+			return 0, err
+		}
+		for _, r := range out {
+			if !r.Draft && !r.Prerelease {
+				n++
+			}
+		}
+		if len(out) < 100 {
+			break
+		}
+	}
+	return n, nil
 }
 
 // fetchSupportCount is how many GitHub's search finds for query; tests

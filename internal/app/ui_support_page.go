@@ -182,7 +182,7 @@ func (a *app) supportHead(c *ui.Context, ink paneInk, wall *supportData) {
 			issues, prs := a.supportWorkCounts(wall)
 			var stats []stat
 			for _, s := range []stat{
-				{wall.Updates, "次更新", ""},
+				{a.supportUpdates(wall), "次更新", ""},
 				{wall.Feedback, "条反馈", ""},
 				{issues, "Issue 已解决", supportIssuesPage},
 				{prs, "PR 已合并", supportPRsPage},

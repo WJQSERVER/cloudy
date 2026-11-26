@@ -705,7 +705,15 @@ func (a *app) settingsAccountPage(k *settingsKit) {
 				a.avatar(c, prof.AvatarURL, 52, ink.press)
 				ui.Column(c).Grow(1).Shrink(1).MinWidth(0).Gap(4).Children(func() {
 					ui.Text(c, prof.Nickname).FontSize(16).FontWeight(700).SingleLine()
-					ui.Text(c, "已登录网易云音乐").FontSize(12.5).TextColor(ink.muted)
+					if len(a.vip) == 0 {
+						ui.Text(c, "已登录网易云音乐").FontSize(12.5).TextColor(ink.muted)
+					}
+					for i, m := range a.vip {
+						ui.Row(c.Key(i)).Gap(8).AlignItems(ui.Center).Children(func() {
+							memberTag(c, m, false)
+							ui.Text(c, m.Expires.Format("2006.01.02")+" 到期").FontSize(12).TextColor(ink.muted).SingleLine()
+						})
+					}
 				})
 				if b := k.button("logout", "退出登录", iconSignOut, false, true); b.Clicked() {
 					a.growFrom("sign-out", b, 14)
@@ -735,8 +743,8 @@ func (a *app) settingsAccountPage(k *settingsKit) {
 func (a *app) settingsPlaybackPage(k *settingsKit) {
 	c, s := k.c, &a.settings
 	k.group("音质", func() {
-		k.rowOf(settingRow{label: "播放音质", desc: "无损与 Hi-Res 需要黑胶 VIP，下一首开始生效",
-			tip: "没有黑胶 VIP 时，播放所能播放的最高音质"}, func() {
+		k.rowOf(settingRow{label: "播放音质", desc: "无损与 Hi-Res 需要黑胶 VIP，超清母带需要黑胶 SVIP，切换后立即生效",
+			tip: "会员不够时，播放所能播放的最高音质"}, func() {
 			labels := make([]string, len(qualityLevels))
 			chosen := qualityLevels[2].label
 			for i, q := range qualityLevels {
@@ -746,8 +754,11 @@ func (a *app) settingsPlaybackPage(k *settingsKit) {
 				}
 			}
 			k.choose("quality", "播放音质", chosen, labels, func(i int) {
-				s.Quality = qualityLevels[i].level
-				a.changed()
+				if why := a.levelLocked(qualityLevels[i].level); why != "" {
+					a.toast = why
+					return
+				}
+				a.setQuality(qualityLevels[i].level)
 			})
 		})
 	})
@@ -789,7 +800,21 @@ func (a *app) settingsPlaybackPage(k *settingsKit) {
 		})
 		a.outputRow(c, k.row)
 	})
-	k.foot("无损与 Hi-Res 需要黑胶 VIP，换音质从下一首开始生效。音量均衡让每首歌听起来一样响；淡入淡出让前后两首衔接在一起。")
+	k.foot("无损与 Hi-Res 需要黑胶 VIP，超清母带需要黑胶 SVIP，换音质从下一首开始生效。音量均衡让每首歌听起来一样响；淡入淡出让前后两首衔接在一起。")
+	k.group("播放列表", func() {
+		k.row("单击歌曲时", "歌单、专辑、歌手等页面里单击一首歌；搜索结果里的歌总是加入", func() {
+			labels := []string{"替换为整个列表", "加入播放列表"}
+			chosen := labels[0]
+			if s.ClickAdds {
+				chosen = labels[1]
+			}
+			k.choose("click-adds", "单击歌曲时", chosen, labels, func(i int) {
+				s.ClickAdds = i == 1
+				a.changed()
+			})
+		})
+	})
+	k.foot("加入播放列表：这首歌插到正在播放的歌后面马上播放，原来的列表不变；页头的「播放全部」仍会替换整个列表。")
 	k.group("定时", func() { a.sleepRow(c, k.stateRow) })
 }
 
@@ -900,7 +925,7 @@ func (a *app) settingsThemeGroup(k *settingsKit) {
 func (a *app) settingsStoragePage(k *settingsKit) {
 	c, ink, s := k.c, k.ink, &a.settings
 	k.group("下载", func() {
-		k.row("下载音质", "可以和播放音质不同；无损与 Hi-Res 占用的空间大得多", func() {
+		k.row("下载音质", "可以和播放音质不同；无损、Hi-Res 与超清母带占用的空间大得多", func() {
 			labels := make([]string, len(downloadLevels))
 			chosen := downloadLevels[0].label
 			for i, d := range downloadLevels {
@@ -1107,6 +1132,23 @@ func (a *app) settingsSystemPage(k *settingsKit) {
 	k.group("任务栏", func() {
 		k.row("播放进度", "在任务栏图标上显示当前歌曲播放到哪里，暂停时显示为黄色", func() {
 			k.toggle("taskbar-progress", "任务栏播放进度", &s.TaskbarProgress, false, a.syncProgress)
+		})
+	})
+	k.group("系统媒体", func() {
+		choices := []string{"标准", "高清", "原图"}
+		sizes := []int{600, 1080, -1}
+		chosen := choices[0]
+		for i, n := range sizes {
+			if s.MediaCover == n {
+				chosen = choices[i]
+			}
+		}
+		k.row("封面清晰度", "系统媒体控件和读取它的壁纸、小组件拿到的封面：标准 600 像素，高清 1080 像素；原图最清晰，但每首歌要多下载几 MB", func() {
+			k.choose("media-cover", "系统媒体封面清晰度", chosen, choices, func(i int) {
+				s.MediaCover = sizes[i]
+				a.changed()
+				a.useMediaCover(true)
+			})
 		})
 	})
 	k.group("小窗口", func() {
