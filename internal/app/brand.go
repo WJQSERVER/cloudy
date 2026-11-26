@@ -16,7 +16,7 @@ import (
 // Where the app's source is, as the AGPL asks of a modified version, and what
 // it was made from.
 const (
-	appSource = "https://github.com/nya-owo/cloudy"
+	appSource = "https://github.com/WJQSERVER/cloudy"
 	appOrigin = "https://github.com/egoist/mygo-cloudmusic"
 )
 

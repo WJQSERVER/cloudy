@@ -24,7 +24,7 @@ func TestFeedbackIssueURL(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if u.Host != "github.com" || u.Path != "/nya-owo/cloudy/issues/new" {
+	if u.Host != "github.com" || u.Path != "/WJQSERVER/cloudy/issues/new" {
 		t.Errorf("link %q", link)
 	}
 	if got := u.Query().Get("title"); got != "桌面歌词偶尔会闪" {

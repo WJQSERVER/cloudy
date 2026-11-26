@@ -1205,7 +1205,7 @@ func (a *app) settingsAboutPage(k *settingsKit) {
 					a.changed()
 				})
 			})
-			k.stateRow("当前版本 "+mygo.App.Version(), "新版本来自 GitHub 的 nya-owo/cloudy", func() {
+			k.stateRow("当前版本 "+mygo.App.Version(), "新版本来自 GitHub 的 WJQSERVER/cloudy", func() {
 				if k.button("check-updates", "检查更新", nil, false, false).Clicked() {
 					a.checkForUpdates()
 				}

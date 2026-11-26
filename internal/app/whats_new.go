@@ -35,7 +35,7 @@ type whatsNewState struct {
 }
 
 // releaseRepo is where the releases, and their notes, are.
-const releaseRepo = "nya-owo/cloudy"
+const releaseRepo = "WJQSERVER/cloudy"
 
 // fetchReleaseNotes asks GitHub for the notes of version's release, for an
 // update the app did not install itself; tests swap it.
