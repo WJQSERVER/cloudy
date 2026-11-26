@@ -576,6 +576,11 @@ func SongURL(id int64, level string) (*Stream, error) {
 
 var errUnsupportedFormat = errors.New("unsupported format")
 
+// m4aStreams reports whether M4A/AAC streams may be handed to the player:
+// Windows decodes them with Media Foundation, other systems cannot. Tests
+// replace it.
+var m4aStreams = runtime.GOOS == "windows"
+
 // SongURLContext stops asking for a stream when the listener changes tracks.
 func SongURLContext(ctx context.Context, id int64, level string) (*Stream, error) {
 	st, err := songURLAt(ctx, id, level)
@@ -701,8 +706,11 @@ func streamFromSongURLData(code int, d songURLData, level string) (*Stream, erro
 			s.Type = "flac"
 		}
 	}
-	// WAV is the cloud drive's, of songs the listener uploaded (#54).
-	if s.Type != "mp3" && s.Type != "flac" && s.Type != "wav" {
+	// WAV is the cloud drive's, of songs the listener uploaded (#54); so
+	// are M4A/AAC, which Windows plays through Media Foundation.
+	supported := s.Type == "mp3" || s.Type == "flac" || s.Type == "wav" ||
+		m4aStreams && (s.Type == "m4a" || s.Type == "aac")
+	if !supported {
 		return nil, fmt.Errorf("%w %s", errUnsupportedFormat, s.Type)
 	}
 	if d.Peak != nil {

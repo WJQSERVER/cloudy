@@ -134,7 +134,7 @@ func TestSongURLKeepsIPLiteralHTTP(t *testing.T) {
 	}
 }
 
-// When a lossless request returns an unsupported format such as m4a, SongURL
+// When a lossless request returns an unsupported format such as ape, SongURL
 // falls back to exhigh MP3 so playback still succeeds.
 func TestSongURLFallbackFromUnsupportedLosslessFormat(t *testing.T) {
 	old := http.DefaultTransport
@@ -142,7 +142,7 @@ func TestSongURLFallbackFromUnsupportedLosslessFormat(t *testing.T) {
 	calls := 0
 	http.DefaultTransport = songContextTransport(func(r *http.Request) (*http.Response, error) {
 		calls++
-		body := `{"code":200,"data":[{"url":"http://audio.test/song.m4a","type":"m4a","size":1000,"level":"lossless"}]}`
+		body := `{"code":200,"data":[{"url":"http://audio.test/song.ape","type":"ape","size":1000,"level":"lossless"}]}`
 		if calls > 1 {
 			body = `{"code":200,"data":[{"url":"http://audio.test/song.mp3","type":"mp3","size":500,"level":"exhigh"}]}`
 		}
@@ -169,5 +169,30 @@ func TestCloudWAVStreams(t *testing.T) {
 	}
 	if _, err := streamFromSongURLData(200, songURLData{URL: "http://audio.test/song.ape", Type: "ape"}, "lossless"); !errors.Is(err, errUnsupportedFormat) {
 		t.Fatalf("ape: %v", err)
+	}
+}
+
+// A cloud M4A or AAC stream reaches the player where Media Foundation can
+// decode it, instead of being refused and retried as "loading".
+func TestCloudM4AStreamsOnWindows(t *testing.T) {
+	old := m4aStreams
+	m4aStreams = true
+	defer func() { m4aStreams = old }()
+	for _, tc := range []struct{ typ, want string }{
+		{"M4A", "m4a"}, {"aac", "aac"},
+	} {
+		st, err := streamFromSongURLData(200, songURLData{
+			URL: "http://audio.test/song." + tc.want, Type: tc.typ, Level: "exhigh",
+		}, "exhigh")
+		if err != nil {
+			t.Fatalf("%s: %v", tc.typ, err)
+		}
+		if st.Type != tc.want {
+			t.Errorf("%s: type %q, want %q", tc.typ, st.Type, tc.want)
+		}
+	}
+	m4aStreams = false
+	if _, err := streamFromSongURLData(200, songURLData{URL: "http://audio.test/song.m4a", Type: "m4a"}, "exhigh"); !errors.Is(err, errUnsupportedFormat) {
+		t.Fatalf("m4a without a decoder: %v", err)
 	}
 }
