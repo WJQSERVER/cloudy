@@ -13,9 +13,9 @@ import (
 // While it shows, closing the window leaves the music playing there, until
 // the listener quits; the icon opens the window again.
 
-// trayTemplate is the record and tonearm of the app's icon, black on
-// transparent for macOS to tint: 15.6 points tall in the menu bar's 18, at
-// 2×, as icon/tray draws it.
+// trayTemplate is the cat's head of the app's icon, black on
+// transparent for macOS to tint, at 2× of the menu bar's 18 points, as
+// icon/main.go draws it.
 //
 //go:embed tray/tray-template.png
 var trayTemplate []byte

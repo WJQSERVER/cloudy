@@ -37,7 +37,7 @@ func embeddedBitmap(b []byte) func() *ui.Bitmap {
 	})
 }
 
-// The little dinosaurs of the record on the app's icon, and the icon.
+// The cat of the app's icon (1.3.12), its face in a circle, and the icon.
 var (
 	mascot    = embeddedBitmap(mascotPNG)
 	brandIcon = embeddedBitmap(brandPNG)
@@ -77,9 +77,10 @@ func openLink(url string) {
 }
 
 // How the app comes in as it starts (1.3.2, the user's 方案 A): the app's
-// icon, its arm lifting and a glint crossing it; the record rising off its
-// base and spinning up, the base fading; the record flying into the
+// icon and a glint crossing it; a record, the cat on its label, growing
+// out of it and spinning up as the icon fades; the record flying into the
 // player bar's cover as the veil over the app lifts, landing with a ring.
+// (Until 1.3.12 the icon was a record player, drawn here, its arm lifting.)
 // Times in ms from the start; all of it is painted by one element, by the
 // time, so that the frames are painted only, however busy the first page
 // is as it loads under it.
@@ -87,6 +88,9 @@ const (
 	splashEnd   = 1180 * time.Millisecond
 	splashTile  = 196 // the icon's side
 	splashLiftR = 0.5 // the record's radius risen, of the tile
+	// brand/icon.png is brandIconSide pixels, its square brandIconSquare
+	// of them (icon/main.go).
+	brandIconSide, brandIconSquare = 512, 472
 )
 
 // splash is the start of the app (above), over the window. It takes no
@@ -157,8 +161,8 @@ func (a *app) drawSplash(p *ui.Painter, r ui.Rect, t float32, bg ui.Color, dark 
 	}
 	back := func(x float32) float32 { const k = 1.35; y := x - 1; return 1 + (k+1)*y*y*y + k*y*y }
 
-	// The veil over the app, lifting as the record flies, with a red glow
-	// in it about the icon, which goes as the base does.
+	// The veil over the app, lifting as the record flies, with a warm glow
+	// in it about the icon, which goes as the icon does.
 	veil := 1 - out3(span(640, 1000))
 	if veil > 0 {
 		p.Fill(r, bg.Alpha(veil), 0)
@@ -169,11 +173,11 @@ func (a *app) drawSplash(p *ui.Painter, r ui.Rect, t float32, bg ui.Color, dark 
 				g = .26
 			}
 			core := ui.Rect{X: cx - 60, Y: cy - 60, W: 120, H: 120}
-			p.Shadow(core, 60, 0, 0, 260, 60, ui.RGBA(241, 43, 55, g*glow))
+			p.Shadow(core, 60, 0, 0, 260, 60, ui.RGBA(242, 132, 96, g*glow))
 		}
 	}
 
-	// The icon: its base, the record on it, the arm on the record.
+	// The icon, then the record out of it.
 	iconIn := span(0, 200) // at rest by the hold
 	baseOut := span(380, 660)
 	baseAlpha := 1 - out3(baseOut)
@@ -186,36 +190,32 @@ func (a *app) drawSplash(p *ui.Painter, r ui.Rect, t float32, bg ui.Color, dark 
 	tile := ui.Rect{X: bx - w/2, Y: by - w/2, W: w, H: w}
 	lift := inOut3(span(320, 640))
 	if baseAlpha > 0 {
-		p.Shadow(tile, w*.23, 0, 18, 46, 0, ui.RGBA(150, 12, 24, .38*baseAlpha))
-		p.FillGradient(tile, ui.LinearGradient{Angle: 160, Stops: []ui.GradientStop{
-			{Color: ui.Hex("#ff5058").Alpha(baseAlpha), At: 0},
-			{Color: ui.Hex("#f12b37").Alpha(baseAlpha), At: .55},
-			{Color: ui.Hex("#d41b29").Alpha(baseAlpha), At: 1},
-		}}, w*.23)
-		p.FillGradient(tile, ui.LinearGradient{Angle: 180, Stops: []ui.GradientStop{
-			{Color: white.Alpha(.26 * baseAlpha), At: 0}, {Color: white.Alpha(0), At: .5},
-		}}, w*.23)
-		// The platter's well, as the record leaves it.
-		if lift > 0 {
-			wr := .38 * w
-			well := ui.Rect{X: bx - .06*w - wr, Y: by + .06*w - wr, W: 2 * wr, H: 2 * wr}
-			p.Fill(well, ui.RGBA(90, 0, 10, .22*lift*baseAlpha), wr)
-			p.Stroke(well, white.Alpha(.18*lift*baseAlpha), wr, 1)
-			hub := w * .02
-			p.Fill(ui.Rect{X: well.X + wr - hub, Y: well.Y + wr - hub, W: 2 * hub, H: 2 * hub}, white.Alpha(.5*lift*baseAlpha), hub)
+		// The icon's square is a squircle: a rounded square a little
+		// inside it, its shadow and glint stay under it.
+		rad := w * .3
+		in := w * .025
+		tile := ui.Rect{X: tile.X + in, Y: tile.Y + in, W: w - 2*in, H: w - 2*in}
+		p.Shadow(tile, rad, 0, 18, 46, 0, ui.RGBA(120, 70, 40, .30*baseAlpha))
+		// The icon's picture has a margin round its square: drawn larger,
+		// its square fills the tile.
+		if b := brandIcon(); b != nil {
+			m := w*(float32(brandIconSide)/brandIconSquare-1)/2 + in
+			pic := ui.Rect{X: tile.X - m, Y: tile.Y - m, W: w + 2*m - 2*in, H: w + 2*m - 2*in}
+			p.ImageRegion(b, ui.Rect{}, pic, ui.ImageOptions{Tint: white.Alpha(baseAlpha)})
+		} else {
+			p.Fill(tile, ui.Hex("#e9d2be").Alpha(baseAlpha), rad)
 		}
 		// A glint crossing it, corner to corner.
 		if g := span(180, 460); g > 0 && g < 1 {
 			at := lerp(-.3, 1.3, g)
 			p.FillGradient(tile, ui.LinearGradient{Angle: 135, Stops: []ui.GradientStop{
 				{Color: white.Alpha(0), At: at - .14}, {Color: white.Alpha(.32 * baseAlpha), At: at}, {Color: white.Alpha(0), At: at + .14},
-			}}, w*.23)
+			}}, rad)
 		}
-		p.Stroke(tile, white.Alpha(.22*baseAlpha), w*.23, 1)
 	}
 
-	// The record: on the icon, risen over it, then into the bar.
-	ox, oy, oR := bx-.06*w, by+.06*w, .38*w
+	// The record: out of the icon, risen over it, then into the bar.
+	ox, oy, oR := bx, by, float32(0)
 	ux, uy, uR := cx+S*.06, cy-S*.04, S*splashLiftR
 	rx, ry, R := lerp(ox, ux, lift), lerp(oy, uy, lift), lerp(oR, uR, lift)
 	shade := lift
@@ -233,28 +233,12 @@ func (a *app) drawSplash(p *ui.Painter, r ui.Rect, t float32, bg ui.Color, dark 
 		shade = lerp(shade, 0, k)
 	}
 	// Gone into the bar's own cover as it lands.
-	if land := span(1000, 1080); land < 1 {
+	if land := span(1000, 1080); land < 1 && R > .5 {
 		disc := ui.Rect{X: rx - R, Y: ry - R, W: 2 * R, H: 2 * R}
 		p.Shadow(disc, R, 0, R*(.06+.08*shade), R*(.25+.25*shade), 0, ui.RGBA(0, 0, 0, .45*(1-land)))
 		if land == 0 {
 			drawRecord(p, disc, mascot(), float32(math.Mod(float64(splashTurn(t)), 360)))
 		}
-	}
-
-	// The arm: lifts off the record and goes.
-	if armAlpha := 1 - out3(span(340, 480)); armAlpha > 0 {
-		armLift := inOut3(span(200, 440))
-		px, py := bx+.30*w, by-.30*w
-		rest := float32(math.Atan2(.38, -.13))
-		ang := rest - armLift*.62
-		hx, hy := px+float32(math.Cos(float64(ang)))*.42*w, py+float32(math.Sin(float64(ang)))*.42*w
-		arm := ui.Hex("#f4f4f6").Alpha(armAlpha)
-		p.Line(px, py, hx, hy, w*.035, arm)
-		ha := ang + .55
-		p.Line(hx, hy, hx+float32(math.Cos(float64(ha)))*.1*w, hy+float32(math.Sin(float64(ha)))*.1*w, w*.06, arm)
-		pr, hr := w*.07, w*.032
-		p.Fill(ui.Rect{X: px - pr, Y: py - pr, W: 2 * pr, H: 2 * pr}, arm, pr)
-		p.Fill(ui.Rect{X: px - hr, Y: py - hr, W: 2 * hr, H: 2 * hr}, ui.Hex("#c9c9cf").Alpha(armAlpha), hr)
 	}
 
 	// The name under the icon while it shows.
@@ -271,7 +255,7 @@ func (a *app) drawSplash(p *ui.Painter, r ui.Rect, t float32, bg ui.Color, dark 
 	if land := span(1000, 1180); land > 0 && land < 1 {
 		g := 18 * out3(land)
 		ring := ui.Rect{X: tx - tR - g, Y: ty - tR - g, W: 2 * (tR + g), H: 2 * (tR + g)}
-		p.Stroke(ring, ui.RGBA(229, 56, 59, .45*(1-land)), tR+g, 2)
+		p.Stroke(ring, ui.RGBA(238, 120, 82, .45*(1-land)), tR+g, 2)
 	}
 }
 

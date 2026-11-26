@@ -446,6 +446,7 @@ func Run() error {
 		a.pl.SetEffects(a.currentEffects(), false)
 		a.pl.Quality = func() string { return a.settings.Quality }
 		a.useMoreWords()
+		a.useOwnLyrics()
 		a.useMediaCover(false)
 		a.useOwnCovers()
 		a.pl.Normalize = func() bool { return a.settings.Normalize }
