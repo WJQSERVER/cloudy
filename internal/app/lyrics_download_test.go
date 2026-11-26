@@ -181,6 +181,10 @@ func TestLyricDownloadMenuOptions(t *testing.T) {
 			tt.SetPreferences(ui.Preferences{ReduceMotion: true})
 			tt.Advance(time.Second)
 			tt.Frame()
+			// Keep the pointer in Now Playing: left alone its controls fold
+			// away, and "更多" is no longer there to press.
+			tt.Move(170, 120)
+			tt.Frame()
 			if err := chooseItem(tt, tc.button, "下载歌词"); err != nil {
 				t.Fatal(err)
 			}
