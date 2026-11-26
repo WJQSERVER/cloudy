@@ -1,13 +1,20 @@
 # Pushing a tag such as v1.0.0 builds the apps of Windows, signs their
 # updates, and uploads them to a draft release of the tag, which is published
-# by hand: installed apps update to it then. macOS and Linux, experimental,
-# build in release-macos.yml and release-linux.yml, so that they never fail
-# or hold up this one.
+# by hand: installed apps update to it then. The same can be started by hand
+# with the tag to build. macOS and Linux, experimental, build in
+# release-macos.yml and release-linux.yml, so that they never fail or hold up
+# this one.
 name: Release
 
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to build and upload (e.g. v1.3.11u1)"
+        required: true
+        type: string
 
 permissions:
   contents: write # the draft release, and the uploads to it
@@ -15,18 +22,22 @@ permissions:
 jobs:
   draft-release:
     runs-on: ubuntu-latest
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
       # mygo build uploads to the release of mygo.json's version, whichever
       # tag started the workflow.
       - name: Check the version
-        run: test "$GITHUB_REF_NAME" = "v$(jq -r .version mygo.json)"
+        run: test "$TAG" = "v$(jq -r .version mygo.json)"
       # mygo build puts the version's section of CHANGELOG.md in the update
       # manifests, which the update window shows; the release page gets the
       # same notes, in place of GitHub's from the pull requests.
       - name: Take the notes from the changelog
         run: |
-          awk -v heading="## ${GITHUB_REF_NAME#v}" '
+          awk -v heading="## ${TAG#v}" '
             /^## / { inside = ($0 == heading); next }
             inside
           ' CHANGELOG.md | sed '/./,$!d' > "$RUNNER_TEMP/notes.md"
@@ -36,15 +47,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
-            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
-              --draft --verify-tag --title "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/notes.md"
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
+              --draft --verify-tag --title "$TAG" --notes-file "$RUNNER_TEMP/notes.md"
           fi
 
   build:
     needs: draft-release
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
     strategy:
       fail-fast: false
       matrix:
@@ -52,6 +65,8 @@ jobs:
           - { name: Windows, os: ubuntu-latest, platform: "windows/amd64,windows/arm64" }
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
@@ -81,7 +96,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           for name in install.ps1 SHA256SUMS; do
-            gh release delete-asset "$GITHUB_REF_NAME" "$name" --repo "$GITHUB_REPOSITORY" --yes || true
+            gh release delete-asset "$TAG" "$name" --repo "$GITHUB_REPOSITORY" --yes || true
           done
       # Installers are named Cloudy-<version>-<arch>-<os>...: GitHub lists a
       # release's files by name, ignoring case, and the architecture first
@@ -93,14 +108,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          version="${GITHUB_REF_NAME#v}"
+          version="${TAG#v}"
           for arch in amd64 arm64; do
             from="cloudy-setup-${version}-${arch}.exe"
             to="Cloudy-${version}-${arch}-windows-setup.exe"
-            url="$(gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json assets \
+            url="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets \
               -q ".assets[] | select(.name == \"$from\") | .apiUrl")"
             test -n "$url"
             # Run again, the installer was uploaded anew under its old name.
-            gh release delete-asset "$GITHUB_REF_NAME" "$to" --repo "$GITHUB_REPOSITORY" --yes || true
+            gh release delete-asset "$TAG" "$to" --repo "$GITHUB_REPOSITORY" --yes || true
             gh api -X PATCH "$url" -f name="$to" > /dev/null
           done
