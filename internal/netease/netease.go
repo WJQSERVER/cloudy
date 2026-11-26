@@ -126,6 +126,17 @@ func (t *Track) URL() string {
 	return apiBase + "/song?id=" + strconv.FormatInt(t.ID, 10)
 }
 
+// ShareURL is the song's page as a link to share, naming the listener who
+// shares it where one is signed in, as the web player's link does. Episodes
+// keep their plain link.
+func (t *Track) ShareURL(userID int64) string {
+	link := t.URL()
+	if userID <= 0 || t.ProgramID > 0 {
+		return link
+	}
+	return link + "&userid=" + strconv.FormatInt(userID, 10)
+}
+
 // Thread names the track's comments, and what NetEase likes it by, for an
 // episode: the episode's, not its audio's.
 func (t *Track) Thread() string {

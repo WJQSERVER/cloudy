@@ -10,6 +10,8 @@ import (
 	"netease-music-mygo/internal/netease"
 )
 
+// Copying a song's link names the signed-in listener as its sharer, and
+// leaves out userid when nobody is signed in.
 func TestSongMenuCopies(t *testing.T) {
 	var copied string
 	real := copyText
@@ -45,6 +47,19 @@ func TestSongMenuCopies(t *testing.T) {
 		if a.menu.open {
 			t.Errorf("%s left the menu open", c.item)
 		}
+	}
+
+	a.profile = &netease.Profile{UserID: 42}
+	if err := tt.Click("更多"); err != nil {
+		t.Fatal(err)
+	}
+	settle(tt)
+	if err := tt.Click("复制链接"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if want := "https://music.163.com/song?id=1859245776&userid=42"; copied != want {
+		t.Errorf("signed in, copied %q, want %q", copied, want)
 	}
 }
 
@@ -82,6 +97,8 @@ func TestSongMenuPlaylists(t *testing.T) {
 	}
 }
 
+// The right-click menu copies the song's link with the signed-in listener's
+// userid, without playing the song.
 func TestSongMenuOnRightClick(t *testing.T) {
 	var copied string
 	real := copyText
@@ -90,6 +107,7 @@ func TestSongMenuOnRightClick(t *testing.T) {
 
 	a := newTestApp()
 	a.settings = defaultSettings()
+	a.profile = &netease.Profile{UserID: 7}
 	a.playlists[42] = &netease.Playlist{ID: 42, Name: "飙升榜", Tracks: []netease.Track{
 		{ID: 1, Name: "一张相片", Artists: []netease.Artist{{Name: "林宥嘉"}}, Duration: 200000},
 		{ID: 2, Name: "宝船", Artists: []netease.Artist{{Name: "DOUDOU"}}, Duration: 200000},
@@ -111,7 +129,7 @@ func TestSongMenuOnRightClick(t *testing.T) {
 		t.Fatal(err)
 	}
 	tt.Frame()
-	if want := "https://music.163.com/song?id=2"; copied != want {
+	if want := "https://music.163.com/song?id=2&userid=7"; copied != want {
 		t.Errorf("copied %q, want %q", copied, want)
 	}
 	if a.pl.Current() != nil {

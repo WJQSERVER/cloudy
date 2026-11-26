@@ -47,7 +47,13 @@ func (a *app) songActions(tr *netease.Track, pid int64) [][]menuAction {
 		{
 			{label: "复制歌名", icon: iconCopy, do: func() { copyText(tr.Name) }},
 			{label: "复制歌名和歌手", icon: iconCopy, do: func() { copyText(tr.Name + " - " + tr.ArtistNames()) }},
-			{label: "复制链接", icon: iconLink, do: func() { copyText(tr.URL()) }},
+			{label: "复制链接", icon: iconLink, do: func() {
+				var uid int64
+				if a.profile != nil {
+					uid = a.profile.UserID
+				}
+				copyText(tr.ShareURL(uid))
+			}},
 		},
 	}
 	if tr.LocalPath != "" {
