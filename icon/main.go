@@ -1,220 +1,267 @@
-// Command icon draws the app icons: the layers of AppIcon.icon, the Icon
-// Composer document that macOS 26 and later render in Liquid Glass, and
-// resources/icon.png, the same icon as macOS draws it, on the grid of older
-// macOS icons, for older macOS and Windows; and from AppIcon-dev.icon, cream
-// where the app's is red, resources/icon-dev.png, the icon of mygo dev
-// builds.
+// Command icon makes the app's icons from icon/cat.webp, the artwork of
+// Cloudy's cat (1.3.12): a rounded square on black. It cuts the square out
+// along its own edge, measured ray by ray, and writes every icon the app,
+// its packages and its website use:
 //
-// Run it from the repository root on a Mac with Xcode 26 or later:
+//   - resources/icon.png and icon-dev.png, the icon of Windows, Linux and
+//     older macOS, on the 944 of 1024 the icon had before;
+//   - icon/AppIcon.icon/Assets/cat.png, the art full bleed, its corners
+//     filled from inside, for the Icon Composer document of macOS 26;
+//   - internal/app/brand: icon.png (the about card, the start) and mascot.png, the
+//     cat's face in a circle, where a page has nothing to show;
+//   - internal/app/tray: tray.png and tray-template.png, drawn here, a cat's
+//     head for the macOS menu bar;
+//   - website/public: icon.png and favicon.png.
 //
-//	go run ./icon
-//
-// The icon.json of each document, its background, glass and dark-mode
-// colors, is edited by hand or in Icon Composer.
+// Run it from the repository root: go run ./icon
 package main
 
 import (
 	"fmt"
 	"image"
 	"image/color"
-	"image/draw"
 	"image/png"
-	"log"
 	"math"
 	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
+
+	xdraw "golang.org/x/image/draw"
+	"golang.org/x/image/vector"
+	"golang.org/x/image/webp"
 )
 
-const ictool = "/Applications/Xcode.app/Contents/Applications/Icon Composer.app/Contents/Executables/ictool"
-
-// icons are the documents drawn, with the PNG rendered from each and the
-// colors of its tonearm: the gradient and the cap on its pivot.
-var icons = []struct {
-	document, output   string
-	top, bottom, pivot string
-}{
-	// Red, with a white tonearm.
-	{"icon/AppIcon.icon", "resources/icon.png", "#FFFFFF", "#E6E3E5", "#D9D5D8"},
-	// Cream, with a red one to match the label.
-	{"icon/AppIcon-dev.icon", "resources/icon-dev.png", "#FF5B5B", "#E3122C", "#FFE1DE"},
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
 }
 
-// A record on Icon Composer's 1024-point full-bleed canvas, seen close up:
-// larger than the canvas, it runs off the left and bottom edges. And the
-// tonearm over it, from its pivot to the headshell resting on the grooves.
-var (
-	rec   = struct{ cx, cy, r float64 }{330, 712, 560}
-	pivot = image.Pt(820, 214)
-	head  = image.Pt(585, 520)
-)
+func save(name string, img image.Image) {
+	f, err := os.Create(name)
+	must(err)
+	must(png.Encode(f, img))
+	f.Close()
+	fmt.Println(name)
+}
+
+var src *image.RGBA
+var N int
+
+func isBlack(x, y int) bool {
+	c := src.RGBAAt(x, y)
+	return int(c.R)+int(c.G)+int(c.B) < 3*50
+}
+
+// boundary distance from centre along angle th where art begins (from outside).
+func edge(th float64) float64 {
+	h := float64(N) / 2
+	for r := h * 1.45; r > 0; r -= 0.25 {
+		x, y := h+r*math.Cos(th), h+r*math.Sin(th)
+		ix, iy := int(x), int(y)
+		if ix < 0 || iy < 0 || ix >= N || iy >= N {
+			continue
+		}
+		if !isBlack(ix, iy) {
+			return r
+		}
+	}
+	return 0
+}
 
 func main() {
-	for _, ic := range icons {
-		layers := map[string]string{
-			"arm.svg":    armSVG(ic.top, ic.bottom, ic.pivot),
-			"record.svg": recordSVG(),
-			"label.svg":  labelSVG(),
+	f, err := os.Open("icon/cat.webp")
+	must(err)
+	im, err := webp.Decode(f)
+	must(err)
+	N = im.Bounds().Dx()
+	src = image.NewRGBA(image.Rect(0, 0, N, N))
+	xdraw.Draw(src, src.Bounds(), im, image.Point{}, xdraw.Src)
+	h := float64(N) / 2
+
+	// The boundary measured along rays, every 0.05 degree, smoothed.
+	const steps = 7200
+	rad := make([]float64, steps)
+	for i := range rad {
+		rad[i] = edge(2 * math.Pi * float64(i) / steps)
+	}
+	sm := make([]float64, steps)
+	for i := range sm {
+		var v []float64
+		for d := -60; d <= 60; d++ {
+			v = append(v, rad[(i+d+steps)%steps])
 		}
-		for name, s := range layers {
-			if err := os.WriteFile(filepath.Join(ic.document, "Assets", name), []byte(s), 0o644); err != nil {
-				log.Fatal(err)
+		// a low percentile: the edge where art surely is
+		for a := 1; a < len(v); a++ {
+			for b := a; b > 0 && v[b] < v[b-1]; b-- {
+				v[b], v[b-1] = v[b-1], v[b]
 			}
 		}
-		if err := render(ic.document, ic.output); err != nil {
-			log.Fatal(err)
+		sm[i] = v[len(v)/4]
+	}
+	edgeAt := func(x, y float64) (float64, float64) {
+		dx, dy := x-h, y-h
+		th := math.Atan2(dy, dx)
+		if th < 0 {
+			th += 2 * math.Pi
+		}
+		f := th / (2 * math.Pi) * steps
+		i := int(f) % steps
+		t := f - math.Floor(f)
+		r := sm[i]*(1-t) + sm[(i+1)%steps]*t
+		return math.Hypot(dx, dy), r
+	}
+	const inset = 3.0
+	mask := image.NewAlpha(src.Bounds())
+	for y := 0; y < N; y++ {
+		for x := 0; x < N; x++ {
+			d, r := edgeAt(float64(x)+.5, float64(y)+.5)
+			v := (r - inset - d) + .5 // 1px ramp
+			if v < 0 {
+				v = 0
+			}
+			if v > 1 {
+				v = 1
+			}
+			mask.Pix[y*N+x] = uint8(v*255 + .5)
 		}
 	}
-}
-
-func svg(body string) string {
-	return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">` + "\n" + body + "\n</svg>\n"
-}
-
-func n(v float64) string {
-	return strings.TrimSuffix(strings.TrimRight(fmt.Sprintf("%.2f", v), "0"), ".")
-}
-
-func armSVG(top, bottom, cap string) string {
-	p := pivot
-	length := math.Hypot(float64(head.X-p.X), float64(head.Y-p.Y))
-	angle := math.Atan2(float64(head.Y-p.Y), float64(head.X-p.X)) * 180 / math.Pi
-	end := float64(p.X) + length - 30
-	return svg(fmt.Sprintf(`<defs>
-<linearGradient id="m" x1="0" y1="0" x2="1" y2="1">
-<stop offset="0" stop-color="%[11]s"/><stop offset="1" stop-color="%[12]s"/></linearGradient>
-</defs>
-<g transform="rotate(%[3]s %[1]d %[2]d)">
-<rect x="%[4]d" y="%[5]d" width="64" height="52" rx="15" fill="url(#m)"/>
-<rect x="%[1]d" y="%[6]d" width="%[7]s" height="34" rx="17" fill="url(#m)"/>
-<rect x="%[8]s" y="%[9]d" width="92" height="56" rx="14" fill="url(#m)" transform="rotate(28 %[10]s %[2]d)"/>
-</g>
-<circle cx="%[1]d" cy="%[2]d" r="72" fill="url(#m)"/>
-<circle cx="%[1]d" cy="%[2]d" r="27" fill="%[13]s"/>`,
-		p.X, p.Y, n(angle), p.X-104, p.Y-26, p.Y-17, n(length-30), n(end-22), p.Y-28, n(end), top, bottom, cap))
-}
-
-func recordSVG() string {
-	var b strings.Builder
-	fmt.Fprintf(&b, `<defs>
-<radialGradient id="d" cx="%[1]s" cy="%[2]s" r="%[3]s" gradientUnits="userSpaceOnUse">
-<stop offset="0.35" stop-color="#2A2A30"/><stop offset="0.95" stop-color="#17171B"/><stop offset="1" stop-color="#0E0E11"/></radialGradient>
-</defs>
-<circle cx="%[1]s" cy="%[2]s" r="%[3]s" fill="url(#d)"/>
-<circle cx="%[1]s" cy="%[2]s" r="%[4]s" fill="none" stroke="#FFFFFF" stroke-opacity="0.14" stroke-width="3"/>
-`, n(rec.cx), n(rec.cy), n(rec.r), n(rec.r-8))
-	// Grooves, unevenly bright like the bands of tracks.
-	for i, r := 0, rec.r*0.42; r < rec.r-12; i, r = i+1, r+7 {
-		fmt.Fprintf(&b, `<circle cx="%s" cy="%s" r="%s" fill="none" stroke="#FFFFFF" stroke-opacity="%s" stroke-width="1.4"/>`+"\n",
-			n(rec.cx), n(rec.cy), n(r), n([]float64{0.05, 0.08, 0.04, 0.07}[i%4]))
-	}
-	b.WriteString(sheen(-62, 54, 0.2, rec.r*0.39, rec.r-10))
-	b.WriteString(sheen(118, 54, 0.14, rec.r*0.39, rec.r-10))
-	return svg(strings.TrimSuffix(b.String(), "\n"))
-}
-
-// sheen is a soft band of reflected light across the grooves, centered on
-// the angle mid, in degrees: slices whose opacity falls off smoothly from
-// the band's middle, as SVG has no conic gradient.
-func sheen(mid, width, peak, r0, r1 float64) string {
-	const slices = 48
-	pt := func(a, r float64) string {
-		a *= math.Pi / 180
-		return n(rec.cx+math.Cos(a)*r) + " " + n(rec.cy+math.Sin(a)*r)
-	}
-	var b strings.Builder
-	for i := range slices {
-		a0 := mid - width/2 + width*float64(i)/slices
-		a1 := a0 + width/slices + 0.15 // overlap, so no seams show
-		t := (float64(i)+0.5)/slices*2 - 1
-		o := math.Round(peak*math.Exp(-t*t*3.2)*1000) / 1000
-		fmt.Fprintf(&b, `<path d="M%sL%sA%s %s 0 0 1 %sL%sA%s %s 0 0 0 %sZ" fill="#FFFFFF" fill-opacity="%s"/>`+"\n",
-			pt(a0, r0), pt(a0, r1), n(r1), n(r1), pt(a1, r1), pt(a1, r0), n(r0), n(r0), pt(a0, r0), n(o))
-	}
-	return b.String()
-}
-
-func labelSVG() string {
-	return svg(fmt.Sprintf(`<defs>
-<linearGradient id="l" x1="0" y1="0" x2="0" y2="1">
-<stop offset="0" stop-color="#FF5B5B"/><stop offset="1" stop-color="#E3122C"/></linearGradient>
-</defs>
-<circle cx="%[1]s" cy="%[2]s" r="%[3]s" fill="url(#l)"/>
-<circle cx="%[1]s" cy="%[2]s" r="%[4]s" fill="none" stroke="#FFFFFF" stroke-opacity="0.28" stroke-width="3"/>
-<circle cx="%[1]s" cy="%[2]s" r="%[5]s" fill="#FFF6F2"/>`, n(rec.cx), n(rec.cy), n(rec.r*0.358), n(rec.r*0.247), n(rec.r*0.052)))
-}
-
-// render has ictool draw document as macOS does, and lays it on the
-// 1024-pixel grid of macOS icons at output: an 824-pixel body, centered,
-// over a soft shadow.
-func render(document, output string) error {
-	const canvas, body = 1024, 824
-	dir, err := os.MkdirTemp("", "icon")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(dir)
-	drawn := filepath.Join(dir, "icon.png")
-	size := fmt.Sprint(body)
-	if out, err := exec.Command(ictool, document, "--export-image", "--output-file", drawn,
-		"--platform", "macOS", "--rendition", "Default", "--width", size, "--height", size, "--scale", "1").CombinedOutput(); err != nil {
-		return fmt.Errorf("ictool (it comes with Xcode 26 or later): %v\n%s", err, out)
-	}
-	// ictool draws in Display P3, and the PNG this writes carries no
-	// profile, which readers take as sRGB: convert, or the reds go dull.
-	if out, err := exec.Command("sips", "--matchTo", "/System/Library/ColorSync/Profiles/sRGB Profile.icc", drawn).CombinedOutput(); err != nil {
-		return fmt.Errorf("sips: %v\n%s", err, out)
-	}
-	f, err := os.Open(drawn)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	src, err := png.Decode(f)
-	if err != nil {
-		return err
-	}
-
-	at := image.Pt((canvas-body)/2, (canvas-body)/2)
-	dst := image.NewNRGBA(image.Rect(0, 0, canvas, canvas))
-	shadow := image.NewAlpha(dst.Bounds())
-	draw.Draw(shadow, src.Bounds().Add(at).Add(image.Pt(0, 12)), src, src.Bounds().Min, draw.Src)
-	blur(shadow, 10)
-	draw.DrawMask(dst, dst.Bounds(), image.NewUniform(color.NRGBA{A: 72}), image.Point{}, shadow, image.Point{}, draw.Over)
-	draw.Draw(dst, src.Bounds().Add(at), src, src.Bounds().Min, draw.Over)
-
-	out, err := os.Create(output)
-	if err != nil {
-		return err
-	}
-	if err := png.Encode(out, dst); err != nil {
-		out.Close()
-		return err
-	}
-	return out.Close()
-}
-
-// blur approximates a Gaussian blur of the given radius with three box
-// blurs in each direction.
-func blur(m *image.Alpha, radius int) {
-	w, h := m.Rect.Dx(), m.Rect.Dy()
-	buf := make([]uint8, len(m.Pix))
-	pass := func(src, dst []uint8, count, length, stride, step int) {
-		for line := range count {
-			base := line * stride
-			sum := 0
-			for i := -radius; i <= radius; i++ {
-				sum += int(src[base+min(max(i, 0), length-1)*step])
-			}
-			for i := range length {
-				dst[base+i*step] = uint8(sum / (2*radius + 1))
-				sum += int(src[base+min(i+radius+1, length-1)*step]) - int(src[base+max(i-radius, 0)*step])
+	// Full-bleed: outside the mask takes the colour of the art inside.
+	full := image.NewRGBA(src.Bounds())
+	known := make([]bool, N*N)
+	for y := 0; y < N; y++ {
+		for x := 0; x < N; x++ {
+			if d, r := edgeAt(float64(x)+.5, float64(y)+.5); d <= r-inset-1.5 {
+				full.SetRGBA(x, y, src.RGBAAt(x, y))
+				known[y*N+x] = true
 			}
 		}
 	}
-	for range 3 {
-		pass(m.Pix, buf, h, w, m.Stride, 1)
-		pass(buf, m.Pix, w, h, 1, m.Stride)
+	for pass := 0; pass < 400; pass++ {
+		var add []int
+		var cols []color.RGBA
+		for y := 0; y < N; y++ {
+			for x := 0; x < N; x++ {
+				if known[y*N+x] {
+					continue
+				}
+				var r, g, b, n int
+				for dy := -1; dy <= 1; dy++ {
+					for dx := -1; dx <= 1; dx++ {
+						xx, yy := x+dx, y+dy
+						if xx < 0 || yy < 0 || xx >= N || yy >= N || !known[yy*N+xx] {
+							continue
+						}
+						c := full.RGBAAt(xx, yy)
+						r, g, b, n = r+int(c.R), g+int(c.G), b+int(c.B), n+1
+					}
+				}
+				if n > 0 {
+					add = append(add, y*N+x)
+					cols = append(cols, color.RGBA{uint8(r / n), uint8(g / n), uint8(b / n), 255})
+				}
+			}
+		}
+		if len(add) == 0 {
+			break
+		}
+		for i, p := range add {
+			known[p] = true
+			full.SetRGBA(p%N, p/N, cols[i])
+		}
 	}
+	// Masked icon: art with alpha.
+	cut := image.NewNRGBA(src.Bounds())
+	for i := 0; i < N*N; i++ {
+		c := full.Pix[i*4 : i*4+4]
+		copy(cut.Pix[i*4:], c)
+		cut.Pix[i*4+3] = mask.Pix[i]
+	}
+
+	scaled := func(img image.Image, size, content int) *image.RGBA {
+		out := image.NewRGBA(image.Rect(0, 0, size, size))
+		off := (size - content) / 2
+		xdraw.CatmullRom.Scale(out, image.Rect(off, off, off+content, off+content), img, img.Bounds(), xdraw.Over, nil)
+		return out
+	}
+	full1024 := image.NewRGBA(image.Rect(0, 0, 1024, 1024))
+	xdraw.CatmullRom.Scale(full1024, full1024.Bounds(), full, full.Bounds(), xdraw.Src, nil)
+	save("icon/AppIcon.icon/Assets/cat.png", full1024)
+	icon := scaled(cut, 1024, 944)
+	save("resources/icon.png", icon)
+	save("resources/icon-dev.png", icon)
+	save("website/public/icon.png", icon)
+	save("website/public/favicon.png", scaled(cut, 128, 128))
+	save("internal/app/brand/icon.png", scaled(cut, 512, 472))
+	save("internal/app/tray/tray.png", scaled(cut, 64, 60))
+
+	const ss = 4
+	// Mascot: a round crop of the cat's face.
+	mcx, mcy, mr := 505.0*float64(N)/1254, 850.0*float64(N)/1254, 395.0*float64(N)/1254
+	ms := int(2 * mr)
+	m := image.NewNRGBA(image.Rect(0, 0, ms, ms))
+	for y := 0; y < ms; y++ {
+		for x := 0; x < ms; x++ {
+			sx, sy := int(mcx-mr)+x, int(mcy-mr)+y
+			c := full.RGBAAt(sx, sy)
+			in := 0
+			for j := 0; j < ss; j++ {
+				for i := 0; i < ss; i++ {
+					dx := float64(x) + (float64(i)+.5)/ss - mr
+					dy := float64(y) + (float64(j)+.5)/ss - mr
+					if dx*dx+dy*dy <= mr*mr {
+						in++
+					}
+				}
+			}
+			m.SetNRGBA(x, y, color.NRGBA{c.R, c.G, c.B, uint8(in * 255 / (ss * ss))})
+		}
+	}
+	save("internal/app/brand/mascot.png", scaled(m, 256, 256))
+
+	// Tray template for the macOS menu bar: a cat's head, black.
+	const T = 36
+	z := vector.NewRasterizer(T, T)
+	k := float32(T) / 36
+	// head: ellipse via bezier approximations
+	ell := func(cx, cy, rx, ry float32) {
+		const c = 0.5523
+		z.MoveTo(cx+rx, cy)
+		z.CubeTo(cx+rx, cy+ry*c, cx+rx*c, cy+ry, cx, cy+ry)
+		z.CubeTo(cx-rx*c, cy+ry, cx-rx, cy+ry*c, cx-rx, cy)
+		z.CubeTo(cx-rx, cy-ry*c, cx-rx*c, cy-ry, cx, cy-ry)
+		z.CubeTo(cx+rx*c, cy-ry, cx+rx, cy-ry*c, cx+rx, cy)
+		z.ClosePath()
+	}
+	ell(18*k, 22*k, 13*k, 10.5*k)
+	// ears
+	z.MoveTo(5.6*k, 19*k)
+	z.LineTo(6.8*k, 4.6*k)
+	z.LineTo(14.8*k, 12.6*k)
+	z.ClosePath()
+	z.MoveTo(30.4*k, 19*k)
+	z.LineTo(21.2*k, 12.6*k)
+	z.LineTo(29.2*k, 4.6*k)
+	z.ClosePath()
+	al := image.NewAlpha(image.Rect(0, 0, T, T))
+	z.Draw(al, al.Bounds(), image.Opaque, image.Point{})
+	// eyes cut out
+	e := vector.NewRasterizer(T, T)
+	ellE := func(cx, cy, rx, ry float32) {
+		const c = 0.5523
+		e.MoveTo(cx+rx, cy)
+		e.CubeTo(cx+rx, cy+ry*c, cx+rx*c, cy+ry, cx, cy+ry)
+		e.CubeTo(cx-rx*c, cy+ry, cx-rx, cy+ry*c, cx-rx, cy)
+		e.CubeTo(cx-rx, cy-ry*c, cx-rx*c, cy-ry, cx, cy-ry)
+		e.CubeTo(cx+rx*c, cy-ry, cx+rx, cy-ry*c, cx+rx, cy)
+		e.ClosePath()
+	}
+	ellE(13.2*k, 21.5*k, 2.1*k, 2.6*k)
+	ellE(22.8*k, 21.5*k, 2.1*k, 2.6*k)
+	eye := image.NewAlpha(image.Rect(0, 0, T, T))
+	e.Draw(eye, eye.Bounds(), image.Opaque, image.Point{})
+	tt := image.NewNRGBA(image.Rect(0, 0, T, T))
+	for i := range al.Pix {
+		v := int(al.Pix[i]) * (255 - int(eye.Pix[i])) / 255
+		tt.Pix[i*4+3] = uint8(v)
+	}
+	save("internal/app/tray/tray-template.png", tt)
 }

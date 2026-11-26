@@ -63,6 +63,7 @@ func (a *app) songActions(tr *netease.Track, pid int64) [][]menuAction {
 		})
 	}
 	files := []menuAction{save, {label: "下载歌词", icon: iconLyrics, do: func() { a.openLyricDownload(song) }}}
+	files = append(files, a.ownLyricsActions(song)...)
 	if tr.Album.PicURL != "" {
 		files = append(files, a.coverAction(tr))
 	}
