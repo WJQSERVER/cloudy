@@ -94,6 +94,7 @@ func TestRemoveSongFromPlaylist(t *testing.T) {
 		t.Fatalf("%v; the menu shows %q", err, tt.Texts())
 	}
 	tt.Frame()
+	settle(tt) // the removed row leaves as the list settles
 	if got := <-calls; got != (del{10, 2}) {
 		t.Errorf("removed %+v, want song 2 from playlist 10", got)
 	}

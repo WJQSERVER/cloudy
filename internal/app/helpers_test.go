@@ -45,14 +45,10 @@ func settle(tt *ui.Tester) {
 }
 
 func chooseItem(tt *ui.Tester, path ...string) error {
-	for i, label := range path {
-		// What the label before opened grows first. The first opens:
-		// it goes at once, as on Now Playing, whose controls rest.
-		if i > 0 {
-			settle(tt)
-		} else {
-			tt.Frame()
-		}
+	for _, label := range path {
+		// What opened the menu grows before its rows take the pointer:
+		// menus now rise from where they were asked, on a right click too.
+		settle(tt)
 		if err := tt.Click(label); err != nil {
 			return err
 		}
