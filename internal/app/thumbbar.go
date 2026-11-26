@@ -84,7 +84,7 @@ func (a *app) syncThumbs() {
 		a.win.SetThumbnail(stillCover(a.pl.Cover()))
 	}
 	if st.track == 0 {
-		a.win.SetThumbButtons(nil)
+		_ = a.win.SetThumbBar(nil)
 		return
 	}
 	ink := color.NRGBA{0x1b, 0x1b, 0x1f, 0xff}
@@ -99,14 +99,14 @@ func (a *app) syncThumbs() {
 	if st.liked {
 		heart, heartTip = thumbGlyph(glyphHeartFull, likeRed), "取消喜欢"
 	}
-	act := func(fn func()) func() {
-		return func() { fn(); a.syncThumbs(); a.redraw() }
+	act := func(fn func()) func(*mygo.ThumbButton, *mygo.Window) {
+		return func(*mygo.ThumbButton, *mygo.Window) { fn(); a.syncThumbs(); a.redraw() }
 	}
-	a.win.SetThumbButtons([]mygo.ThumbButton{
-		{Icon: thumbGlyph(glyphPrev, ink), Tooltip: "上一首", Click: act(a.pl.Prev)},
-		{Icon: play, Tooltip: playTip, Click: act(a.pl.TogglePlay)},
-		{Icon: thumbGlyph(glyphNext, ink), Tooltip: "下一首", Click: act(a.pl.Next)},
-		{Icon: heart, Tooltip: heartTip, Disabled: !st.canLike, Click: act(a.likeCurrent)},
+	_ = a.win.SetThumbBar([]mygo.ThumbButton{
+		{Icon: thumbGlyph(glyphPrev, ink), ToolTip: "上一首", Click: act(a.pl.Prev)},
+		{Icon: play, ToolTip: playTip, Click: act(a.pl.TogglePlay)},
+		{Icon: thumbGlyph(glyphNext, ink), ToolTip: "下一首", Click: act(a.pl.Next)},
+		{Icon: heart, ToolTip: heartTip, Disabled: !st.canLike, Click: act(a.likeCurrent)},
 	})
 }
 

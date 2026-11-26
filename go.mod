@@ -16,11 +16,17 @@ require (
 )
 
 require (
+	github.com/ProtonMail/go-crypto v1.4.1 // indirect
+	github.com/cloudflare/circl v1.6.2 // indirect
 	github.com/go-text/typesetting v0.3.5 // indirect
 	github.com/icza/bitio v1.1.0 // indirect
+	github.com/klauspost/compress v1.18.6 // indirect
 	github.com/mewkiz/pkg v0.0.0-20250417130911-3f050ff8c56d // indirect
 	github.com/mewpkg/term v0.0.0-20241026122259-37a80af23985 // indirect
+	github.com/ulikunitz/xz v0.5.15 // indirect
+	go.digitalxero.dev/rpm v0.3.4 // indirect
+	golang.org/x/crypto v0.57.0 // indirect
 	golang.org/x/net v0.59.0 // indirect
 )
 
-replace github.com/egoist/mygo => github.com/nya-owo/mygo v0.7.1-0.20261126155940-4f1dc7918cdf
+replace github.com/egoist/mygo => github.com/WJQSERVER/mygo v0.0.0-20261126172901-375985b704b9

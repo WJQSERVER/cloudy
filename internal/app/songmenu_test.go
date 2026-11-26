@@ -120,6 +120,7 @@ func TestSongMenuOnRightClick(t *testing.T) {
 		t.Fatal(err)
 	}
 	tt.Frame()
+	settle(tt)
 	for _, label := range []string{"复制歌名", "复制歌名和歌手", "复制链接"} {
 		if !slices.Contains(tt.Texts(), label) {
 			t.Fatalf("the menu has no %s: %q", label, tt.Texts())
