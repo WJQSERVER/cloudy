@@ -1102,7 +1102,15 @@ func (a *app) settingsSystemPage(k *settingsKit) {
 				a.setOpenAtLogin(on)
 			}
 		})
-		k.sub("隐藏到托盘", "开机自动打开时不弹出窗口，从托盘图标打开", login, func() {
+		k.row("托盘图标", "在通知栏或菜单栏保留图标；关掉后关闭窗口直接退出。这是行为开关，对性能影响很小", func() {
+			on := !s.HideTray
+			if settingSwitch(k.c.Key("show-tray"), &on).Label("托盘图标").Changed() {
+				s.HideTray = !on
+				a.changed()
+				a.applyTray()
+			}
+		})
+		k.sub("隐藏到托盘", "开机自动打开时不弹出窗口，从托盘图标打开", login && !s.HideTray, func() {
 			k.toggle("start-hidden", "开机启动时隐藏到托盘", &s.StartHidden, false, nil)
 		})
 	})
@@ -1133,6 +1141,14 @@ func (a *app) settingsSystemPage(k *settingsKit) {
 				chosen = choices[i]
 			}
 		}
+		k.row("不下载原图封面", "即使上面选了原图也只取 600 像素：原图每首歌要多下几 MB，流量和磁盘都更省；封面略糊", func() {
+			on := s.NoOriginalCover
+			if settingSwitch(k.c.Key("no-original-cover"), &on).Label("不下载原图封面").Changed() {
+				s.NoOriginalCover = on
+				a.changed()
+				a.useMediaCover(true)
+			}
+		})
 		k.row("封面清晰度", "系统媒体控件和读取它的壁纸、小组件拿到的封面：标准 600 像素，高清 1080 像素；原图最清晰，但每首歌要多下载几 MB", func() {
 			k.choose("media-cover", "系统媒体封面清晰度", chosen, choices, func(i int) {
 				s.MediaCover = sizes[i]

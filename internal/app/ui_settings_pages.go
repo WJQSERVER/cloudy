@@ -302,7 +302,7 @@ func (a *app) settingsLyricsPage(k *settingsKit) {
 			words := !s.NpWholeLines
 			k.toggle("np-words", "逐字高亮", &words, false, func() { s.NpWholeLines = !words })
 		})
-		k.row("其他来源逐字歌词", "网易云只有逐行歌词时，从 AMLL 歌词库或酷狗找逐字歌词", func() {
+		k.row("其他来源逐字歌词", "网易云只有逐行歌词时，从 AMLL 歌词库或酷狗找逐字歌词；会额外请求第三方歌词源，网络慢时切歌可能稍慢", func() {
 			k.toggle("more-words", "其他来源逐字歌词", &s.MoreWords, false, func() { moreWordsOn.Store(s.MoreWords) })
 		})
 		k.row("隐藏制作信息", "不显示作词、作曲、编曲等行", func() {
@@ -636,6 +636,13 @@ func (a *app) settingsAppearancePage(k *settingsKit) {
 			}
 			if a.segmented(c.Key("motion"), &i, "完整", "精简", "关闭") {
 				s.Motion = modes[i]
+				a.changed()
+			}
+		})
+		k.row("启动动画", "关闭后每次启动直接进主界面，省下约 2.5 秒；只影响启动，不影响播放", func() {
+			on := !s.NoSplash
+			if settingSwitch(c.Key("splash"), &on).Label("启动动画").Changed() {
+				s.NoSplash = !on
 				a.changed()
 			}
 		})

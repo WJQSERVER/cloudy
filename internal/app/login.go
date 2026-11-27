@@ -28,5 +28,5 @@ func (a *app) setOpenAtLogin(on bool) {
 // started by the system at login, as the listener asked, with the tray
 // icon to bring it back.
 func (a *app) startsHidden() bool {
-	return a.settings.StartHidden && mygo.App.WasOpenedAtLogin()
+	return a.settings.StartHidden && !a.settings.HideTray && mygo.App.WasOpenedAtLogin()
 }

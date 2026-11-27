@@ -102,7 +102,7 @@ func (a *app) splash(c *ui.Context) {
 	if a.splashed {
 		return
 	}
-	if a.motion != motionFull {
+	if a.motion != motionFull || a.settings.NoSplash {
 		a.splashed = true
 		return
 	}

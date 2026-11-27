@@ -98,6 +98,9 @@ type settings struct {
 	GlassPreviewBg string `json:"glassPreviewBg,omitempty"`
 	// Motion is how much the app moves: full, lite or off.
 	Motion string `json:"motion,omitempty"`
+	// NoSplash skips the start animation while Motion stays full: it costs
+	// about two and a half seconds of every launch, nothing after.
+	NoSplash bool `json:"noSplash,omitempty"`
 	// IgnoreSystemMotion keeps the app moving while the desktop asks for
 	// less motion (Windows's animation effects off), as Motion says: some
 	// turn those off for the desktop's speed, not to keep apps still (PR #28).
@@ -209,6 +212,9 @@ type settings struct {
 	// MediaCover is how large a cover the system's media controls get:
 	// 0 or 600 standard, 1080, or -1 the cover as NetEase keeps it.
 	MediaCover int `json:"mediaCover,omitempty"`
+	// NoOriginalCover keeps the system's media cover at 600 pixels even
+	// when 原图 is chosen: NetEase's original costs several MB a song.
+	NoOriginalCover bool `json:"noOriginalCover,omitempty"`
 	// MiniX and MiniY are where the mini window was left.
 	MiniX int `json:"miniX,omitempty"`
 	MiniY int `json:"miniY,omitempty"`
@@ -305,6 +311,9 @@ type settings struct {
 	// CloseQuits quits the app as its window is closed, rather than hiding
 	// it to the tray with the music playing on.
 	CloseQuits bool `json:"closeQuits,omitempty"`
+	// HideTray removes the menu bar or notification area icon. It changes
+	// how the window closes, not the app's speed.
+	HideTray bool `json:"hideTray,omitempty"`
 	// PodcastSpeed is how fast episodes play, their pitch kept: 0 for 1.
 	PodcastSpeed float64 `json:"podcastSpeed,omitempty"`
 	// OutputDevice is the endpoint ID of the output music plays through;

@@ -28,6 +28,9 @@ func (a *app) useMediaCover(again bool) {
 	case n < 0:
 		n = 0
 	}
+	if a.settings.NoOriginalCover && n != 600 && n != 1080 {
+		n = 600 // never fetch NetEase's original cover
+	}
 	if int(player.CoverSize.Load()) == n {
 		return
 	}
