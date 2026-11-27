@@ -13,11 +13,12 @@ import (
 	"github.com/egoist/mygo/ui"
 )
 
-// Where the app's source is, as the AGPL asks of a modified version, and what
-// it was made from.
+// The license, the source of this fork, and the original upstream, as the
+// AGPL asks of a modified version.
 const (
-	appSource = "https://github.com/WJQSERVER/cloudy"
-	appOrigin = "https://github.com/egoist/mygo-cloudmusic"
+	appLicense = appSource + "/blob/main/LICENSE"
+	appSource  = "https://github.com/WJQSERVER/cloudy"
+	appOrigin  = "https://github.com/egoist/mygo-cloudmusic"
 )
 
 //go:embed brand/mascot.png
@@ -48,16 +49,18 @@ func mascotView(c *ui.Context, size float32) ui.Element {
 	return ui.Image(c, mascot()).Size(size, size).Fit(ui.Cover)
 }
 
-// aboutCard says what the app is, whose it is and where its source is.
+// aboutCard says what the app is, and where its license, source and origin
+// are. The license itself is the only description here.
 func (a *app) aboutCard(k *settingsKit) {
-	c, ink := k.c, k.ink
+	c := k.c
 	ui.Row(c).Padding(16, 20).Gap(14).AlignItems(ui.Center).Children(func() {
 		ui.Image(c, brandIcon()).Size(52, 52).Fit(ui.Cover).Shrink(0)
 		ui.Column(c).Grow(1).Shrink(1).MinWidth(0).Gap(3).Children(func() {
 			ui.Text(c, mygo.App.Name()+" "+mygo.App.Version()).FontSize(14).FontWeight(700)
-			ui.Text(c, "由 nya 制作，基于 egoist/mygo-cloudmusic 修改，以 AGPL-3.0 开源。与网易云音乐官方无关").
-				FontSize(12).TextColor(ink.muted).LineHeight(1.4)
 		})
+		if k.button("license", "许可证", iconExternal, false, false).Clicked() {
+			openLink(appLicense)
+		}
 		if k.button("source", "源码", iconExternal, false, false).Clicked() {
 			openLink(appSource)
 		}

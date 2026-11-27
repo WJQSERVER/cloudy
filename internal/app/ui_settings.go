@@ -240,7 +240,6 @@ func (a *app) settingsNavItems(c *ui.Context, ink paneInk, searching bool) {
 		if button.Clicked() {
 			a.settingsView.tab = settingsCategory(i)
 			a.settingsView.query = ""
-			a.support.page = false
 		}
 	}
 }
@@ -608,15 +607,6 @@ func (a *app) settingsBody(c *ui.Context) {
 		page.Children(func() {
 			if k.query == "" {
 				cat := settingsCategories[a.settingsView.tab]
-				if a.settingsView.tab == settingsAbout && a.support.page {
-					// 支持 Cloudy, in place of 关于's page, which it goes back to.
-					col := ui.Column(c.Key("support"))
-					if swap {
-						a.enterAfterPaint(col, ui.Pose{Y: 8}, motionSwap)
-					}
-					col.Children(func() { a.supportPage(k) })
-					return
-				}
 				col := ui.Column(c.Key(a.settingsView.tab))
 				if swap {
 					// What it holds rises, only moved: a move the renderer
@@ -1170,10 +1160,7 @@ func (a *app) settingsSystemPage(k *settingsKit) {
 func (a *app) settingsAboutPage(k *settingsKit) {
 	s := &a.settings
 	k.group("软件信息", func() {
-		k.block("软件信息 版本 源码 原项目 开源 "+mygo.App.Version(), func() { a.aboutCard(k) })
-	})
-	k.group("支持作者", func() {
-		k.block(supportWords, func() { a.supportCard(k) })
+		k.block("软件信息 版本 许可证 源码 原项目 开源 "+mygo.App.Version(), func() { a.aboutCard(k) })
 	})
 	if a.updates {
 		k.group("更新", func() {
@@ -1212,9 +1199,8 @@ func (a *app) settingsAboutPage(k *settingsKit) {
 			})
 		})
 	}
-	k.group("反馈", func() {
-		k.block("反馈 建议 问题 bug 私信 邮件", func() { a.feedbackCard(k.c, k.ink) })
-		k.row("诊断日志", "记录与网易云之间的请求和登录过程，不含 Cookie 原文。遇到登录失效时，把这个文件发给作者", func() {
+	k.group("诊断", func() {
+		k.row("诊断日志", "记录与网易云之间的请求和登录过程，不含 Cookie 原文", func() {
 			if k.button("diag-log", "在文件夹中显示", iconFolder, false, false).Clicked() {
 				if path := netease.DiagLogPath(); path != "" {
 					mygo.Shell.ShowItemInFolder(path)

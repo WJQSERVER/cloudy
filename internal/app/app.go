@@ -251,7 +251,6 @@ type app struct {
 	dialogFlyK            float32
 	playFlies             func(ui.Element) // what hides the play button being built as it flies
 	pageDir               int              // the way the page last changed: 1 in, -1 back, 0 across
-	feedback              feedbackState    // the message being written, in the settings
 	roam                  *roamer          // what deals the songs of styles
 	deskWin, miniWin      *mygo.Window     // the windows that float, once opened
 	splashed              bool             // the record has come in, as the app started
@@ -299,7 +298,6 @@ type app struct {
 	shownLines   shownCache      // the lyrics shown, without credits if hidden
 	update       updateState     // the update pane, and the update it found
 	whatsNew     whatsNewState   // what the version updated to brought, said once
-	support      supportState    // the support page (支持 Cloudy), under 关于
 	cacheUsed    int64           // the bytes the song cache takes, -1 until measured
 	otherUsed    int64           // and the pictures' (art_disk.go)
 	updates      bool            // the update plugin is used (useUpdater)

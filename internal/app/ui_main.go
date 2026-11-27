@@ -137,8 +137,6 @@ func (a *app) view(c *ui.Context) {
 	a.accentDialog(c)
 	a.updateDialog(c)
 	a.whatsNewDialog(c)
-	a.supportCodeDialog(c)
-	a.supportWallDialog(c)
 	a.shortcutEditorDialog(c)
 	a.fontPickerDialog(c)
 	a.effectsDialog(c)

@@ -150,13 +150,8 @@ func (a *app) whatsNewDialog(c *ui.Context) {
 				ui.Text(c, "没能获取更新内容，可以到 GitHub 查看。").FontSize(13).TextColor(ink.muted)
 			}
 		})
-		// The foot: a quiet line to the support page on the left, once
-		// in a version, and the buttons on the right.
+		// The foot: the buttons on the right.
 		ui.Row(c).Padding(16, 28, 22, 28).Gap(10).AlignItems(ui.Center).Children(func() {
-			a.supportLine(c, ink, func() {
-				w.open = false
-				a.openSupport()
-			})
 			if (w.cover || w.try) && settingButton(c.Key("open-effects"), ink, "去设置", nil, false, false).Clicked() {
 				w.open = false
 				a.openSettingsAt(settingsAppearance)
