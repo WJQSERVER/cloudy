@@ -1,7 +1,7 @@
 github.com/ProtonMail/go-crypto v1.4.1 h1:9RfcZHqEQUvP8RzecWEUafnZVtEvrBVL9BiF67IQOfM=
 github.com/ProtonMail/go-crypto v1.4.1/go.mod h1:e1OaTyu5SYVrO9gKOEhTc+5UcXtTUa+P3uLudwcgPqo=
-github.com/WJQSERVER/mygo v0.0.0-20261126172901-375985b704b9 h1:cYOpHF495J/itLMx5IfI6E/cgcSXtbrEba+fPCgozvo=
-github.com/WJQSERVER/mygo v0.0.0-20261126172901-375985b704b9/go.mod h1:Hw9sxdSQ4tHuehHw5Q6alR1qTS8kgv3oSFxEejg+7qo=
+github.com/WJQSERVER/mygo v0.10.0-u1 h1:Tu6tZLUq9IwEqpxqkH+EBVt4hOLB1VJx9wBsytUMWAQ=
+github.com/WJQSERVER/mygo v0.10.0-u1/go.mod h1:Hw9sxdSQ4tHuehHw5Q6alR1qTS8kgv3oSFxEejg+7qo=
 github.com/cloudflare/circl v1.6.2 h1:hL7VBpHHKzrV5WTfHCaBsgx/HGbBYlgrwvNXEVDYYsQ=
 github.com/cloudflare/circl v1.6.2/go.mod h1:2eXP6Qfat4O/Yhh8BznvKnJ+uzEoTQ6jVKJRn81BiS4=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
